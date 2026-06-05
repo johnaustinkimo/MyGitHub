@@ -1,0 +1,15 @@
+stgp-seg02|192.168.29.163|root|calvin
+stgp-seg01|192.168.29.162|root|calvin
+iDRAC-devgp-vm01|192.168.75.41|root|calvin
+iDRAC-BQ-CCP-OAVM1|192.168.175.16|root|calvin
+iDRAC-BQ-CCP-OAVM2|192.168.175.17|root|calvin
+iDRAC-BQ-CCP-OAVM3|192.168.175.18|root|calvin
+iDRAC-BQ-CCP-OAVM4|192.168.175.19|root|calvin
+iDRAC-BQ-CCP-OAVM5|192.168.175.20|root|calvin
+iDRAC-BQ-CCP-OAVM8|192.168.175.23|root|calvin
+iDRAC-vcnu05|192.168.175.24|root|calvin
+iDRAC-vcnu03|192.168.175.25|root|calvin
+iDRAC-vcnu04|192.168.175.26|root|calvin
+iDRAC-BQ-CCP-DB01|192.168.175.27|root|calvin
+iDRAC-zcnu05|192.168.175.71|root|calvin
+iDRAC-zcnu06|192.168.175.72|root|calvin
