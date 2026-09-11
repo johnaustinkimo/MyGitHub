@@ -1,0 +1,9 @@
+# Install as /etc/loganalyzer/logGP.cnf
+# chmod 600 /etc/loganalyzer/logGP.cnf
+#
+# Prefer a dedicated least-privilege account such as loganalyzer_review aka. rsyslog
+[client]
+host=127.0.0.1
+port=3306
+user=rsyslog
+password=Password
