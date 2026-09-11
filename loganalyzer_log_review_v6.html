@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>集中日誌管理系統 - 日誌審閱 v6</title>
+<style>
+:root{--bg:#f4f6f8;--panel:#fff;--text:#1f2937;--muted:#667085;--border:#d0d5dd;--ok:#067647;--warn:#b54708;--danger:#b42318;--accent:#175cd3;--pending-bg:#fff6ed;--confirmed-bg:#ecfdf3;--tag-bg:#eef4ff;--tag-text:#3538cd}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}body{font-family:Arial,"Microsoft JhengHei",sans-serif;font-size:15px}button,input,select{font:inherit}.container{width:min(1700px,98vw);margin:18px auto}.header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}.header h1{margin:0;font-size:24px}.clock{color:var(--muted);white-space:nowrap}.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;align-items:end}.col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-5{grid-column:span 5}.col-6{grid-column:span 6}.col-12{grid-column:span 12}label{display:block;font-weight:700;margin-bottom:5px}input,select{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:7px;background:#fff}button{border:0;border-radius:7px;padding:9px 14px;cursor:pointer;background:var(--accent);color:#fff;font-weight:700}button.secondary{background:#475467}button.confirm{background:var(--ok);min-width:86px}button:disabled{opacity:.55;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap}.status{padding:9px 12px;border-radius:7px;background:#f2f4f7;color:var(--muted)}.status.ok{background:#ecfdf3;color:var(--ok)}.status.err{background:#fef3f2;color:var(--danger)}.status.warn{background:#fffaeb;color:var(--warn)}.toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.stats{display:flex;gap:8px;flex-wrap:wrap}.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#f2f4f7;font-weight:700}.badge.pending{color:var(--warn);background:var(--pending-bg)}.badge.confirmed{color:var(--ok);background:var(--confirmed-bg)}.port-tag{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--tag-bg);color:var(--tag-text);font-weight:700;white-space:nowrap}.port-tag.unknown{background:#f2f4f7;color:var(--muted)}.table-wrap{overflow:auto;max-height:68vh;border:1px solid var(--border);border-radius:8px}table{width:100%;border-collapse:collapse;background:#fff}th,td{border-bottom:1px solid #eaecf0;padding:9px 8px;vertical-align:top}th{position:sticky;top:0;z-index:1;background:#f9fafb;text-align:center;white-space:nowrap}td.id,td.time,td.port,td.state,td.user,td.action{text-align:center;white-space:nowrap}td.message{text-align:left;min-width:520px;white-space:pre-wrap;word-break:break-word}tr.pending{background:#fffdf8}tr.confirmed{background:#f8fffb}.state-y{color:var(--ok);font-weight:800}.state-n{color:var(--warn);font-weight:800}.empty{text-align:center;padding:28px;color:var(--muted)}.small{font-size:13px;color:var(--muted)}.hidden{display:none!important}.magic-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.magic-title{font-size:18px;font-weight:800}.magic-target{font-weight:700;color:var(--accent)}.magic-state{display:inline-block;padding:5px 10px;border-radius:999px;font-weight:800;background:#f2f4f7;color:var(--muted)}.magic-state.on{background:#fef3f2;color:var(--danger)}.magic-state.off{background:#ecfdf3;color:var(--ok)}.magic-state.unknown{background:#fffaeb;color:var(--warn)}.magic-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;margin-top:12px;align-items:end}.magic-box{border:1px solid #eaecf0;border-radius:8px;padding:10px;background:#fcfcfd}.magic-box h3{font-size:14px;margin:0 0 8px}.magic-result{margin-top:10px;white-space:pre-wrap;word-break:break-word}.danger-btn{background:var(--danger)}.warn-btn{background:var(--warn)}.ok-btn{background:var(--ok)}.magic-note{margin-top:8px;color:var(--muted);font-size:13px}.magic-controls-disabled{opacity:.6;pointer-events:none}@media(max-width:900px){.col-3,.col-4,.col-5,.col-6{grid-column:span 12}.header{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header"><h1 id="headerInfo">集中日誌管理系統 - 日誌審閱</h1><div id="digital-clock" class="clock"></div></div>
+
+<div class="panel"><div class="grid">
+<div class="col-6"><label for="ddlViewBy">系統環境</label><select id="ddlViewBy"><option value="ws://192.168.167.68:1111/" selected>[OA-DMZ] 集中日誌環境</option></select></div>
+<div class="col-6"><div class="actions"><button id="btnConnect" type="button">連線</button><button id="btnDisconnect" type="button" class="secondary">關閉</button></div></div>
+<div class="col-12"><div id="conInfo" class="status warn">尚未與系統連線</div></div>
+</div></div>
+
+<div class="panel"><div class="grid">
+<div class="col-4"><label for="userid">登入帳號</label><input id="userid" type="text" minlength="2" maxlength="60" autocomplete="username"></div>
+<div class="col-4"><label for="userpw">登入密碼</label><input id="userpw" type="password" minlength="2" autocomplete="current-password"></div>
+<div class="col-4"><div class="actions"><button id="btnLogin" type="button">登入</button><button id="btnLogout" type="button" class="secondary" disabled>登出</button></div></div>
+<div class="col-12"><div id="loginInfo" class="status">尚未登入</div></div>
+</div></div>
+
+<div id="reviewPanel" class="panel hidden"><div class="grid">
+<div class="col-5"><label for="portFilter">日誌分類（由 /etc/tg_https_proxy.conf 載入）</label><select id="portFilter" disabled><option value="ALL">全部 Port / 全部分類</option></select></div>
+<div class="col-3"><label for="searchBox">目前結果內搜尋</label><input id="searchBox" type="text" placeholder="訊息 / ID / Port / Label / 人員"></div>
+<div class="col-4"><div class="actions"><button type="button" data-filter="A">全部日誌</button><button type="button" data-filter="N">未畫押</button><button type="button" data-filter="Y">已畫押</button><button id="btnRefresh" type="button" class="secondary">重新整理</button></div></div>
+<div class="col-12"><div class="toolbar"><div id="queryInfo" class="small">尚未查詢</div><div class="stats"><span class="badge">顯示 <span id="countShown">0</span></span><span class="badge pending">未畫押 <span id="countPending">0</span></span><span class="badge confirmed">已畫押 <span id="countConfirmed">0</span></span></div></div></div>
+</div></div>
+
+
+<div id="magicPanel" class="panel hidden">
+  <div class="magic-head">
+    <div>
+      <div class="magic-title">Telegram Maintenance 控制</div>
+      <div class="small">透過 WebSocket backend → logGP_it.sh → tg_https_proxy magic command</div>
+    </div>
+    <div>目前目標：<span id="magicTarget" class="magic-target">尚未選擇 Port</span>　狀態：<span id="magicState" class="magic-state unknown">UNKNOWN</span></div>
+  </div>
+
+  <div id="magicControls" class="magic-grid magic-controls-disabled">
+    <div class="col-12 magic-box">
+      <h3>狀態與快速控制</h3>
+      <div class="actions">
+        <button id="btnMagicStatus" type="button" class="secondary">查詢 STATUS</button>
+        <button id="btnMaintOn" type="button" class="warn-btn">無期限 ON</button>
+        <button id="btnMaint30m" type="button" class="warn-btn">ON 30 分鐘</button>
+        <button id="btnMaintOff" type="button" class="ok-btn">立即 OFF</button>
+      </div>
+    </div>
+
+    <div class="col-6 magic-box">
+      <h3>指定時間 Maintenance</h3>
+      <div class="grid">
+        <div class="col-4"><label for="maintTtl">TTL 秒數</label><input id="maintTtl" type="number" min="1" max="604800" value="3600"></div>
+        <div class="col-5"><label for="maintReason">維護原因</label><input id="maintReason" type="text" maxlength="120" placeholder="例如 DB_PATCH"></div>
+        <div class="col-3"><button id="btnMaintCustom" type="button" class="warn-btn">啟用</button></div>
+      </div>
+    </div>
+
+    <div class="col-6 magic-box">
+      <h3>延長目前 Maintenance</h3>
+      <div class="grid">
+        <div class="col-6"><label for="extendSec">延長秒數</label><input id="extendSec" type="number" min="1" max="604800" value="1800"></div>
+        <div class="col-6"><button id="btnMaintExtend" type="button" class="secondary">延長</button></div>
+      </div>
+    </div>
+
+    <div class="col-6 magic-box">
+      <h3>Audit Marker</h3>
+      <div class="grid">
+        <div class="col-9"><label for="markerText">Marker</label><input id="markerText" type="text" maxlength="160" placeholder="例如 DB_PATCH_START"></div>
+        <div class="col-3"><button id="btnMagicMarker" type="button" class="secondary">寫入</button></div>
+      </div>
+    </div>
+
+    <div class="col-6 magic-box">
+      <h3>Log-only 測試</h3>
+      <div class="grid">
+        <div class="col-9"><label for="testLogText">測試訊息</label><input id="testLogText" type="text" maxlength="200" placeholder="驗證 A→B→C 與 audit，不送 Telegram"></div>
+        <div class="col-3"><button id="btnMagicTest" type="button" class="secondary">測試</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="magicInfo" class="status warn magic-result">請先選擇單一 Port 後再操作 Maintenance。</div>
+  <div class="magic-note">安全限制：ALL / 未分類不可執行控制；Port 必須存在於 /etc/tg_https_proxy.conf；自由文字不允許冒號與換行。ON/OFF 會影響該 Port 對應 chat_id 的告警抑制狀態。</div>
+</div>
+
+<div id="tablePanel" class="panel hidden"><div class="table-wrap">
+<table><thead><tr><th>ID</th><th>接收日誌時間</th><th>Port / 分類</th><th>日誌訊息</th><th>人員回應時間</th><th>確認狀態</th><th>人員編號</th><th>畫押</th></tr></thead><tbody id="logBody"></tbody></table>
+<div id="emptyMessage" class="empty">目前沒有資料</div>
+</div></div>
+</div>
+
+<script>
+"use strict";
+let ws=null,wsAPI="",wsUID="",loggedIn=false,currentFilter="A",currentPort="ALL",portLoadComplete=false,magicBusy=false,magicRequestPort="",magicRequestAction="";
+const rows=new Map(),portLabels=new Map(),$=id=>document.getElementById(id);
+
+function nowText(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`}
+function setStatus(el,text,kind=""){el.textContent=text;el.className=`status ${kind}`.trim()}
+function socketReady(){return ws&&ws.readyState===WebSocket.OPEN}
+function sendWs(message){if(!socketReady()){setStatus($("conInfo"),"WebSocket 尚未連線，請先重新連線","err");return false}ws.send(message);return true}
+function utf8ToBase64(text){const bytes=new TextEncoder().encode(text),chunk=0x8000;let binary="";for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(binary)}
+function base64ToUtf8(text){try{const binary=atob(text),bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes)}catch(_){return "(後端回覆 Base64 解碼失敗)"}}
+function selectedMagicPort(){const p=$("portFilter").value||"";return /^\d{1,5}$/.test(p)?p:""}
+function validateFreeText(text,name,required=true){const v=String(text||"").trim();if(required&&!v){setStatus($("magicInfo"),`${name} 不可空白`,"err");return null}if(v.includes(":")||/[\r\n]/.test(v)){setStatus($("magicInfo"),`${name} 不可包含冒號或換行`,"err");return null}return v}
+function setMagicStateUnknown(){$("magicState").textContent="UNKNOWN";$("magicState").className="magic-state unknown"}
+function setMagicBusy(busy){magicBusy=busy;document.querySelectorAll("#magicControls button,#magicControls input").forEach(el=>el.disabled=busy);$("portFilter").disabled=busy||!loggedIn||!portLoadComplete}
+function updateMagicTarget(resetState=false){const p=selectedMagicPort(),label=p?(portLabels.get(p)||"未定義 label"):"";if(resetState)setMagicStateUnknown();if(p){$("magicTarget").textContent=`${p} / ${label}`;$("magicControls").classList.remove("magic-controls-disabled");if(!magicBusy)document.querySelectorAll("#magicControls button,#magicControls input").forEach(el=>el.disabled=false)}else{$("magicTarget").textContent="請選擇單一 Port";$("magicControls").classList.add("magic-controls-disabled");document.querySelectorAll("#magicControls button,#magicControls input").forEach(el=>el.disabled=true);setMagicStateUnknown();setStatus($("magicInfo"),"ALL / 未分類不可執行 magic command，請先選擇單一 Port。","warn")}}
+function sendMagic(action,arg1="",arg2="",confirmText=""){if(!loggedIn){setStatus($("magicInfo"),"請先登入","err");return}const port=selectedMagicPort();if(!port){setStatus($("magicInfo"),"請先選擇單一 Port","err");return}if(magicBusy)return;if(confirmText&&!window.confirm(confirmText))return;const parts=["logGP_it","magic_command",port,action];if(arg1!=="")parts.push(String(arg1));if(arg2!=="")parts.push(String(arg2));magicRequestPort=port;magicRequestAction=action;setMagicBusy(true);setStatus($("magicInfo"),`正在執行 ${action}，Port ${port}...`,"warn");if(!sendWs(parts.join(" "))){magicRequestPort="";magicRequestAction="";setMagicBusy(false);updateMagicTarget()}}
+function parseMagicFields(text){const out={};const re=/([A-Z_]+)=("(?:[^"\\]|\\.)*"|\S+)/g;let m;while((m=re.exec(text))!==null){let v=m[2];if(v.startsWith('"')&&v.endsWith('"'))v=v.slice(1,-1);out[m[1]]=v}return out}
+function handleMagicResponse(data){const status=data[1]||"ERR",port=data[2]||"",action=data[3]||"",payload=base64ToUtf8(data.slice(4).join("|")),requestedPort=magicRequestPort,requestedAction=magicRequestAction,hasPending=Boolean(requestedPort&&requestedAction),matchesRequest=hasPending&&port===requestedPort&&action===requestedAction;if(!matchesRequest){const selectedPort=selectedMagicPort(),prefix=status==="OK"?`收到延遲回覆：${action} / Port ${port}`:`收到延遲錯誤：${action} / Port ${port}`;setStatus($("magicInfo"),`${prefix}\n${payload}\n注意：此回覆不屬於目前等待中的 magic request，因此未更新狀態，也未解除目前操作鎖定。`,"warn");return}magicRequestPort="";magicRequestAction="";setMagicBusy(false);updateMagicTarget();const selectedPort=selectedMagicPort(),matchesSelected=port===selectedPort;if(matchesSelected){const f=parseMagicFields(payload),state=(f.MAINTENANCE||f.PIN_STATE||"").toUpperCase();if(state==="ON"||state==="OFF"){$("magicState").textContent=state;$("magicState").className=`magic-state ${state.toLowerCase()}`}else setMagicStateUnknown()}const prefix=status==="OK"?`成功：${action} / Port ${port}`:`失敗：${action} / Port ${port}`;const staleNote=matchesSelected?"":`\n注意：此回覆屬於 Port ${port}，目前已選擇 Port ${selectedPort||"非單一 Port"}，因此未更新目前狀態 badge。`;setStatus($("magicInfo"),`${prefix}\n${payload}${staleNote}`,status==="OK"?"ok":"err")}
+
+function openSocket(){
+ if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;
+ const sel=$("ddlViewBy"),url=sel.value,envName=sel.options[sel.selectedIndex].text;
+ $("headerInfo").textContent=`${envName} - 集中日誌管理系統 - 日誌審閱`;document.title=$("headerInfo").textContent;
+ setStatus($("conInfo"),`正在連線：${envName}`,"warn");ws=new WebSocket(url);
+ ws.onopen=()=>{setStatus($("conInfo"),`已連線：${envName}`,"ok");$("btnLogin").disabled=false};
+ ws.onclose=()=>{setStatus($("conInfo"),`連線已關閉：${envName}`,"warn");logoutUi()};
+ ws.onerror=()=>setStatus($("conInfo"),"WebSocket 連線發生錯誤","err");
+ ws.onmessage=e=>{if(typeof e.data==="string")handleMessage(e.data)};
+}
+function closeSocket(){if(ws)ws.close()}
+
+function login(){
+ const user=$("userid").value.trim(),pass=$("userpw").value;
+ if(user.length<2||pass.length<2){setStatus($("loginInfo"),"帳號與密碼長度至少需 2 個字元","err");return}
+ wsAPI="loginQuery";wsUID=user;sendWs(`logGP_it loginQuery ${user} ${pass}`);
+}
+
+function logoutUi(){
+ loggedIn=false;wsAPI="";wsUID="";currentFilter="A";currentPort="ALL";portLoadComplete=false;magicBusy=false;magicRequestPort="";magicRequestAction="";portLabels.clear();
+ $("userpw").value="";$("userid").disabled=false;$("userpw").disabled=false;$("btnLogin").disabled=!socketReady();$("btnLogout").disabled=true;
+ $("reviewPanel").classList.add("hidden");$("magicPanel").classList.add("hidden");$("tablePanel").classList.add("hidden");$("portFilter").disabled=true;
+ setStatus($("loginInfo"),"尚未登入");clearRows();resetPortSelect();
+}
+function logout(){logoutUi()}
+
+function resetPortSelect(){
+ const s=$("portFilter");s.replaceChildren();
+ const all=document.createElement("option");all.value="ALL";all.textContent="全部 Port / 全部分類";s.appendChild(all);
+ const u=document.createElement("option");u.value="UNCLASSIFIED";u.textContent="未分類 / 無法關聯 Port";s.appendChild(u);
+}
+
+function requestPortList(){wsAPI="portsQuery";portLoadComplete=false;portLabels.clear();resetPortSelect();$("portFilter").disabled=true;sendWs("logGP PORTS")}
+
+function handleMessage(message){
+ if(message==="EOF"){if(wsAPI==="portsQuery")finishPortLoad();return}
+ const data=message.split("|");
+
+ if(wsAPI==="loginQuery"){
+   if(data[0]==="1"){loggedIn=true;$("userid").disabled=true;$("userpw").disabled=true;$("btnLogin").disabled=true;$("btnLogout").disabled=false;$("reviewPanel").classList.remove("hidden");$("magicPanel").classList.remove("hidden");$("tablePanel").classList.remove("hidden");setStatus($("loginInfo"),`登入成功：${wsUID}`,"ok");requestPortList()}
+   else{setStatus($("loginInfo"),"登入失敗，請確認帳號密碼","err");loggedIn=false}
+   return;
+ }
+
+ if(data[0]==="MAGIC"){handleMagicResponse(data);return}
+ if(data[0]==="PORT"&&data.length>=3){receivePort(data[1],data.slice(2).join("|"));return}
+ if(data[0]==="ACK"){handleAck(data);return}
+ if(data[0]==="ERR"){$("queryInfo").textContent=data.slice(1).join(" | ")||"後端處理失敗";return}
+
+ if(data.length>=7){
+   const rec=parseLogRecord(data);
+   if(rec){upsertRow(rec);applySearch()}
+ }
+}
+
+function receivePort(port,label){
+ if(!/^\d{1,5}$/.test(port))return;portLabels.set(port,label);
+ const o=document.createElement("option");o.value=port;o.textContent=`${port} - ${label}`;$("portFilter").appendChild(o);
+}
+function finishPortLoad(){
+ portLoadComplete=true;$("portFilter").disabled=false;
+ const saved=sessionStorage.getItem("loganalyzerReviewPort");
+ if(saved&&(saved==="ALL"||saved==="UNCLASSIFIED"||portLabels.has(saved)))$("portFilter").value=saved;
+ currentPort=$("portFilter").value||"ALL";updateMagicTarget();queryLogs("A");
+}
+function normalizeNull(v){return(!v||v==="NULL")?"":v}
+function normalizeReported(v){return String(v||"N").toUpperCase()==="Y"?"Y":"N"}
+function normalizePort(v){return /^\d{1,5}$/.test(String(v||""))?String(v):""}
+function parseLogRecord(data){if(!Array.isArray(data)||data.length<7)return null;return{id:data[0],receivedAt:data[1],port:normalizePort(data[2]),message:data.slice(3,-3).join("|"),reportedTime:normalizeNull(data[data.length-3]),reported:normalizeReported(data[data.length-2]),userId:normalizeNull(data[data.length-1])}}
+
+function queryLogs(filter){
+ if(!loggedIn||!portLoadComplete)return;
+ currentFilter=filter;currentPort=$("portFilter").value||"ALL";sessionStorage.setItem("loganalyzerReviewPort",currentPort);wsAPI="logQuery";clearRows();
+ const fn=filter==="A"?"全部":filter==="Y"?"已畫押":"未畫押";
+ const pn=currentPort==="ALL"?"全部 Port":currentPort==="UNCLASSIFIED"?"未分類":`${currentPort} - ${portLabels.get(currentPort)||""}`;
+ $("queryInfo").textContent=`${fn}日誌查詢中... 分類：${pn}`;sendWs(`logGP ${filter} ${currentPort}`);
+}
+
+function clearRows(){rows.clear();$("logBody").replaceChildren();updateCounters()}
+function makeCell(text,cls=""){const td=document.createElement("td");td.textContent=text||"";if(cls)td.className=cls;return td}
+function makePortCell(port){const td=document.createElement("td");td.className="port";updatePortCell(td,port);return td}
+function updatePortCell(td,port){td.replaceChildren();const t=document.createElement("span");t.className=`port-tag ${port?"":"unknown"}`.trim();t.textContent=port?`${port} / ${portLabels.get(port)||"未定義 label"}`:"未分類";td.appendChild(t)}
+
+function upsertRow(rec){
+ if(!/^\d+$/.test(String(rec.id)))return;
+ let tr=rows.get(String(rec.id));
+ if(!tr){
+   tr=document.createElement("tr");tr.dataset.id=String(rec.id);
+   tr.appendChild(makeCell(rec.id,"id"));tr.appendChild(makeCell(rec.receivedAt,"time"));tr.appendChild(makePortCell(rec.port));tr.appendChild(makeCell(rec.message,"message"));tr.appendChild(makeCell(rec.reportedTime||"—","time"));tr.appendChild(makeCell(rec.reported,"state"));tr.appendChild(makeCell(rec.userId||"—","user"));
+   const a=document.createElement("td");a.className="action";const b=document.createElement("button");b.type="button";b.className="confirm";b.addEventListener("click",()=>confirmRow(rec.id,b));a.appendChild(b);tr.appendChild(a);
+   $("logBody").appendChild(tr);rows.set(String(rec.id),tr);
+ }
+ updateRowDom(tr,rec);
+}
+
+function updateRowDom(tr,rec){
+ const c=tr.cells;c[0].textContent=rec.id;c[1].textContent=rec.receivedAt||"";updatePortCell(c[2],rec.port);c[3].textContent=rec.message||"";c[4].textContent=rec.reportedTime||"—";c[5].textContent=rec.reported;c[6].textContent=rec.userId||"—";
+ const y=rec.reported==="Y";tr.classList.toggle("confirmed",y);tr.classList.toggle("pending",!y);c[5].className=`state ${y?"state-y":"state-n"}`;
+ const b=c[7].querySelector("button");b.textContent=y?"已畫押":"畫押";b.disabled=y;
+ tr.dataset.reported=rec.reported;tr.dataset.port=rec.port;tr.dataset.search=[rec.id,rec.receivedAt,rec.port,portLabels.get(rec.port)||"",rec.message,rec.reportedTime,rec.reported,rec.userId].join(" ").toLowerCase();
+}
+
+function confirmRow(id,button){
+ if(!loggedIn||!wsUID){setStatus($("loginInfo"),"請先登入後再進行畫押","err");return}
+ if(!/^\d+$/.test(String(id)))return;
+ const tr=rows.get(String(id));if(!tr||tr.dataset.reported==="Y")return;
+ const pt=tr.dataset.port?`${tr.dataset.port} / ${portLabels.get(tr.dataset.port)||""}`:"未分類";
+ if(!window.confirm(`確認畫押日誌 ID ${id}？\n分類：${pt}\n畫押人員：${wsUID}`))return;
+ button.disabled=true;button.textContent="處理中...";wsAPI="updateReview";
+ if(!sendWs(`logGP ${id} ${wsUID}`)){button.disabled=false;button.textContent="畫押"}
+}
+
+function handleAck(data){
+ const id=data[1]||"",rt=normalizeNull(data[2]),r=normalizeReported(data[3]),u=normalizeNull(data[4]),tr=rows.get(String(id));if(!tr)return;
+ updateRowDom(tr,{id,receivedAt:tr.cells[1].textContent,port:tr.dataset.port||"",message:tr.cells[3].textContent,reportedTime:rt,reported:r,userId:u});
+ if(currentFilter==="N"&&r==="Y"){tr.remove();rows.delete(String(id))}
+ $("queryInfo").textContent=`日誌 ID ${id} 已完成畫押：${rt} / ${u}`;applySearch();
+}
+
+function applySearch(){
+ const n=$("searchBox").value.trim().toLowerCase();let shown=0;
+ for(const tr of rows.values()){const v=!n||tr.dataset.search.includes(n);tr.hidden=!v;if(v)shown++}
+ $("countShown").textContent=shown;$("emptyMessage").classList.toggle("hidden",shown!==0);updateCounters();
+}
+function updateCounters(){
+ let p=0,c=0;for(const tr of rows.values()){if(tr.dataset.reported==="Y")c++;else p++}
+ $("countPending").textContent=p;$("countConfirmed").textContent=c;if(!$("searchBox").value.trim())$("countShown").textContent=rows.size;$("emptyMessage").classList.toggle("hidden",rows.size!==0);
+}
+
+function bindEvents(){
+ $("btnConnect").addEventListener("click",openSocket);$("btnDisconnect").addEventListener("click",closeSocket);$("btnLogin").addEventListener("click",login);$("btnLogout").addEventListener("click",logout);$("btnRefresh").addEventListener("click",()=>queryLogs(currentFilter));$("searchBox").addEventListener("input",applySearch);$("portFilter").addEventListener("change",()=>{updateMagicTarget(true);setStatus($("magicInfo"),selectedMagicPort()?"Port 已變更，請查詢 STATUS 取得此 Port 最新 Maintenance 狀態。":"ALL / 未分類不可執行 magic command，請先選擇單一 Port。","warn");queryLogs(currentFilter)});
+ document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click",()=>queryLogs(b.dataset.filter)));
+ $("btnMagicStatus").addEventListener("click",()=>sendMagic("STATUS"));
+ $("btnMaintOn").addEventListener("click",()=>{const p=selectedMagicPort();sendMagic("ON","","",`確認將 Port ${p} 設為無期限 Maintenance ON？\n期間告警只記 log、不送 Telegram，直到手動 OFF。`)});
+ $("btnMaint30m").addEventListener("click",()=>{const p=selectedMagicPort();sendMagic("ON30M","","",`確認將 Port ${p} Maintenance ON 30 分鐘？`)});
+ $("btnMaintCustom").addEventListener("click",()=>{const ttl=Number($("maintTtl").value),reason=validateFreeText($("maintReason").value,"維護原因",false);if(reason===null)return;if(!Number.isInteger(ttl)||ttl<1||ttl>604800){setStatus($("magicInfo"),"TTL 必須為 1～604800 秒","err");return}const b64=reason?utf8ToBase64(reason):"-",p=selectedMagicPort();sendMagic("ON_TTL",ttl,b64,`確認將 Port ${p} Maintenance ON ${ttl} 秒？\n原因：${reason||"未填寫"}`)});
+ $("btnMaintExtend").addEventListener("click",()=>{const sec=Number($("extendSec").value);if(!Number.isInteger(sec)||sec<1||sec>604800){setStatus($("magicInfo"),"延長秒數必須為 1～604800","err");return}sendMagic("EXTEND",sec,"",`確認延長目前 Maintenance ${sec} 秒？`)});
+ $("btnMaintOff").addEventListener("click",()=>{const p=selectedMagicPort();sendMagic("OFF","","",`確認解除 Port ${p} Maintenance？\n解除後新告警會立即恢復送 Telegram。`)});
+ $("btnMagicMarker").addEventListener("click",()=>{const v=validateFreeText($("markerText").value,"Marker");if(v===null)return;sendMagic("MARK",utf8ToBase64(v))});
+ $("btnMagicTest").addEventListener("click",()=>{const v=validateFreeText($("testLogText").value,"測試訊息");if(v===null)return;sendMagic("TEST",utf8ToBase64(v))});
+ $("userpw").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+}
+bindEvents();resetPortSelect();updateMagicTarget();setInterval(()=>$("digital-clock").textContent=`現在時間：${nowText()}`,1000);$("digital-clock").textContent=`現在時間：${nowText()}`;openSocket();
+</script>
+</body>
+</html>
