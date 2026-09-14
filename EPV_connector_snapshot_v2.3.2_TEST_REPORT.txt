@@ -1,0 +1,83 @@
+EPV API Connector Snapshot v2.3.2 - Portability/Compatibility Test Report
+Date: 2026-09-14
+
+Source basis
+------------
+Base:      api_connector_snapshot_v2.3.1.c
+Reference: api_connector_shadow_v2.3.2.c
+Target:    api_connector_snapshot_v2.3.2.c
+
+Preserved snapshot contract
+---------------------------
+PASS  DEFAULT_DB_FILE remains /ws/snapshot.db
+PASS  LKG remains snapshot.lkg.db
+PASS  Schema validation remains users/access/records
+PASS  Login remains users(username/restrict_ip/valid_code) + pass_salt/pass_hash/auth_type
+PASS  Authentication remains SHA256(pass_salt + supplied_password)
+PASS  Secret query remains access -> users -> records
+PASS  No shadow gen_file/epv_file/epa_file/epb_file SQL introduced
+
+Static DB validation against uploaded snapshot.db
+-------------------------------------------------
+PASS  PRAGMA quick_check = ok
+PASS  PRAGMA foreign_key_check = 0 violations
+Observed rows: users=3 access=7 records=256
+
+Compile tests
+-------------
+PASS  Modern OpenSSL branch strict object compile with -Werror
+PASS  Forced EPV_FORCE_OPENSSL_102 branch strict object compile with -Werror
+      (deprecation diagnostics suppressed only for forced legacy branch on a modern OpenSSL host)
+PASS  Full link on test host using installed OpenSSL/SQLite/Jansson runtime
+PASS  Adaptive build script bash syntax
+
+Runtime functional test (synthetic snapshot DB; no real credentials used)
+--------------------------------------------------------------------------
+PASS  strict mTLS handshake
+PASS  HEALTH reports version=2.3.2-snapshot
+PASS  salted SHA-256 login succeeds with known valid password
+PASS  invalid password returns error: auth failed
+PASS  v2 token generation
+PASS  token verification
+PASS  snapshot access authorization
+PASS  records.password DB-format AES-256-CBC decryption
+PASS  returned DB secret exactly matches test plaintext
+PASS  second use of same token returns null (one-time replay protection)
+
+Sensitive --debug tracing
+-------------------------
+PASS  incoming login username/password displayed under --debug
+PASS  salt/password/combined verifier input displayed under --debug
+PASS  calculated/stored SHA-256 verifier displayed under --debug
+PASS  token AES plaintext/ciphertext displayed under --debug
+PASS  token AES decrypt ciphertext/plaintext displayed under --debug
+PASS  encrypted records.password displayed under --debug
+PASS  AES DB encrypted/decrypted password displayed under --debug
+PASS  decrypted DB password displayed under --debug
+Normal execution without --debug does not execute DBG output.
+
+Forced OpenSSL-1.0.2 compatibility branch runtime
+--------------------------------------------------
+PASS  forced legacy branch starts successfully
+PASS  strict mTLS HEALTH succeeds
+PASS  TLS 1.2+ policy retained
+PASS  TLS 1.1 negotiation rejected
+
+Portability changes
+-------------------
+- OpenSSL 1.0.2/1.1/3.x server-method compatibility
+- Legacy TLS floor enforcement for RHEL7/OpenSSL 1.0.2
+- Legacy/new X509 notBefore/notAfter accessor compatibility
+- Certificate expiry check reads PEM directly (avoids newer SSL_CTX getter dependency)
+- Salted SHA-256 password verifier changed to one-shot EVP_Digest(), available on OpenSSL 1.0.2+
+- Adaptive _FORTIFY_SOURCE (2 on older glibc, 3 on newer glibc)
+- Compiler flag probing for older GCC
+- Stack protector fallback
+- Optional -latomic detection
+- Dynamic shutdown status uses EPV_VERSION
+
+Important
+---------
+Build RHEL7 production binaries on RHEL7 (or against a RHEL7-compatible sysroot).
+Do not assume a binary linked on RHEL9/RHEL10 will run on glibc 2.17.
+--debug intentionally exposes sensitive credentials/tokens and should normally be disabled in production.
