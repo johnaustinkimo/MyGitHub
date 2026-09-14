@@ -1,0 +1,55 @@
+[Unit]
+Description=EPV API Connector v2.3.1
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=10
+
+[Service]
+Type=notify
+NotifyAccess=main
+WatchdogSec=30s
+User=epvconnector
+Group=epvconnector
+UMask=0077
+
+RuntimeDirectory=epv-api-connector
+RuntimeDirectoryMode=0700
+
+ExecStartPre=/usr/bin/test -r /ws/shadow.db
+ExecStartPre=/usr/bin/test -r /opt/epm_certs/server.crt
+ExecStartPre=/usr/bin/test -r /opt/epm_certs/server.key
+ExecStartPre=/usr/bin/test -r /opt/epm_certs/ca.crt
+ExecStartPre=/usr/bin/test -r /etc/epv/connector.role
+ExecStart=/usr/local/sbin/api_connector_shadow_v2.3.1 6666 strict --workers 8 --db /ws/shadow.db --runtime-dir /run/epv-api-connector --instance-id %H --token-binding compat --role-file /etc/epv/connector.role --handshake-timeout 5 --io-timeout 10 --cert-warn-days 30 --snapshot-warn-age 86400 --status-interval 0
+
+Restart=always
+RestartSec=2s
+TimeoutStopSec=15s
+KillSignal=SIGTERM
+LimitNOFILE=65536
+LimitCORE=0
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=epv-api-connector
+
+[Install]
+WantedBy=multi-user.target

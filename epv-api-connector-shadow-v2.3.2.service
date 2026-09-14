@@ -1,0 +1,97 @@
+# /etc/systemd/system/epv-api-connector-shadow-v2.3.2.service
+#
+# EPV API Connector Shadow v2.3.2
+# Portable baseline for RHEL 7 / 8 / 9 / 10.
+#
+# IMPORTANT:
+#   - Production default intentionally does NOT include --debug.
+#   - --debug exposes login passwords, encrypted secrets, decrypted DB passwords,
+#     token plaintext and token ciphertext to stderr/journald.
+#   - The connector automatically rereads the role file; no restart is required
+#     when ACTIVE/STANDBY/MAINTENANCE changes.
+
+[Unit]
+Description=EPV API Connector Shadow v2.3.2
+Documentation=file:/ws/EPV_connector_shadow_v2.3.2_DEBUG_PASSWORD.md
+Wants=network-online.target
+After=network-online.target local-fs.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+
+User=epvconnector
+Group=epvconnector
+UMask=0077
+
+# systemd creates this as /run/epv-api-connector-shadow-v2.3.2.
+# The connector stores its validated last-known-good shadow.lkg.db here.
+RuntimeDirectory=epv-api-connector-shadow-v2.3.2
+RuntimeDirectoryMode=0700
+
+# Fail before opening the listening socket if required production files are
+# absent or unreadable by the epvconnector service account.
+ExecStartPre=/usr/bin/test -s /ws/shadow.db
+ExecStartPre=/usr/bin/test -r /ws/shadow.db
+ExecStartPre=/usr/bin/test -s /opt/epm_certs/server.crt
+ExecStartPre=/usr/bin/test -r /opt/epm_certs/server.crt
+ExecStartPre=/usr/bin/test -s /opt/epm_certs/server.key
+ExecStartPre=/usr/bin/test -r /opt/epm_certs/server.key
+ExecStartPre=/usr/bin/test -s /opt/epm_certs/ca.crt
+ExecStartPre=/usr/bin/test -r /opt/epm_certs/ca.crt
+ExecStartPre=/usr/bin/test -s /etc/epv/connector.role
+ExecStartPre=/usr/bin/test -r /etc/epv/connector.role
+
+ExecStart=/usr/local/sbin/api_connector_shadow_v2.3.2 \
+    6666 \
+    strict \
+    --workers 8 \
+    --db /ws/shadow.db \
+    --runtime-dir /run/epv-api-connector-shadow-v2.3.2 \
+    --handshake-timeout 5 \
+    --io-timeout 10 \
+    --cert-warn-days 30 \
+    --snapshot-warn-age 172800 \
+    --status-interval 0 \
+    --token-binding compat \
+    --role active \
+    --role-file /etc/epv/connector.role
+
+# SIGTERM triggers the connector's graceful shutdown path.
+KillSignal=SIGTERM
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# The connector implements sd_notify READY=1 and WATCHDOG=1 itself.
+WatchdogSec=30
+
+Restart=on-failure
+RestartSec=3
+
+# Queue capacity is 8192 and the process uses one socket FD per accepted
+# connection plus SQLite/cert/runtime descriptors.
+LimitNOFILE=65536
+
+# Portable hardening directives supported by the RHEL7 systemd generation and
+# newer RHEL releases.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=full
+ProtectHome=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET
+
+# Keep the source DB directory and certificate/config directories read-only to
+# this service.  Binding the DIRECTORY rather than only shadow.db preserves
+# visibility of an external atomic rename (/ws/shadow.db.new -> shadow.db).
+ReadOnlyPaths=/ws
+ReadOnlyPaths=/opt/epm_certs
+ReadOnlyPaths=/etc/epv
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=epv-api-shadow-v2.3.2
+
+[Install]
+WantedBy=multi-user.target
