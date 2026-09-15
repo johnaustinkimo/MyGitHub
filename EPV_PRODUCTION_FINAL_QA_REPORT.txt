@@ -1,0 +1,46 @@
+EPV PRODUCTION FINAL QA REPORT
+Date: 2026/09/15
+
+1. Shell syntax
+PASS bash -n: tools/build_all_rhel.sh
+PASS bash -n: tools/check_runtime_files.sh
+PASS bash -n: tools/preflight_rhel.sh
+PASS bash -n: client/epv_api_cli_v2.3.3_rhel7_build.sh
+PASS bash -n: connectors/shadow/api_connector_shadow_v2.3.2_build.sh
+PASS bash -n: connectors/snapshot/api_connector_snapshot_v2.3.2_build.sh
+
+2. Client build
+PASS client build on current OpenSSL 3/glibc toolchain
+	libcrypto.so.3 => /lib/x86_64-linux-gnu/libcrypto.so.3 (0x00007f39061ed000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f3905ff9000)
+	libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f3905fd9000)
+	libzstd.so.1 => /lib/x86_64-linux-gnu/libzstd.so.1 (0x00007f3905f0d000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f390695d000)
+Build OK: epv_api_cli_v2.3.3_rhel7
+
+3. Connector source syntax - modern + forced OpenSSL 1.0.2 compatibility branch
+PASS syntax modern: connectors/shadow/api_connector_shadow_v2.3.2.c
+PASS syntax forced OpenSSL-1.0.2 path: connectors/shadow/api_connector_shadow_v2.3.2.c
+PASS syntax modern: connectors/snapshot/api_connector_snapshot_v2.3.2.c
+PASS syntax forced OpenSSL-1.0.2 path: connectors/snapshot/api_connector_snapshot_v2.3.2.c
+
+Note: full connector link build requires target-host jansson-devel; build scripts fail closed if missing.
+
+4. systemd unit parse
+PASS systemd syntax: systemd/epv-api-connector-shadow-v2.3.2.service (expected missing-binary warning is acceptable before install)
+  epv-api-connector-shadow-v2.3.2.service: Command /usr/local/sbin/api_connector_shadow_v2.3.2 is not executable: No such file or directory
+PASS systemd syntax: systemd/epv-api-connector-snapshot-v2.3.2.service (expected missing-binary warning is acceptable before install)
+  epv-api-connector-snapshot-v2.3.2.service: Command /usr/local/sbin/api_connector_snapshot_v2.3.2 is not executable: No such file or directory
+
+5. Release content safety
+PASS: no .db/.key/.crt runtime data included
+
+6. Previously completed runtime/regression coverage
+PASS client v2.3.3: multi-instance cache isolation
+PASS client v2.3.3: bounded cache lock (~250 ms bypass design)
+PASS client v2.3.2+: fast priority recovery probe with hard TLS deadline
+PASS client v2.3.2+: higher-priority ACTIVE recovery and STANDBY skip
+PASS shadow connector v2.3.2 lineage: strict mTLS, HEALTH, ACTIVE/STANDBY/MAINTENANCE, LKG/reload/replay behavior
+PASS snapshot connector v2.3.2: salted login -> token -> secret decrypt -> replay rejection synthetic end-to-end test
+
+FINAL RESULT: PASS
