@@ -1,0 +1,136 @@
+# ============================================================
+# HiCloud Secure Storage Upload Configuration
+# For: hicloud_latest_upload_v1.3.6.sh
+# ============================================================
+
+S3S_BIN="/ws/linux/usr/bin/secure-storage-desktop-shell"
+
+# Credentials
+# IMPORTANT: use rotated/current credentials, not credentials pasted in chat/logs.
+ACCESS_KEY="CHANGE_ME"
+SECRET_KEY="CHANGE_ME"
+
+# ------------------------------------------------------------
+# NFS source
+# ------------------------------------------------------------
+
+SOURCE_DIR="/alldata"
+
+# Fail closed if /alldata is mounted from another NFS export.
+EXPECTED_NFS_SOURCE="192.168.167.98:/volume1/alldata"
+EXPECTED_MOUNT_TARGET="/alldata"
+
+# ------------------------------------------------------------
+# Upload temporary workspace root
+#
+# Script creates a unique per-run subdirectory below this path.
+# ------------------------------------------------------------
+
+TEMP_WORKSPACE="/data_bk/HiCloudSecretS3_tmp/upload"
+
+# ------------------------------------------------------------
+# Archive
+#
+# Default:
+#   20260917.tar
+#
+# To create:
+#   testfile-20260917.tar
+#
+# either run:
+#   script run testfile-20260917
+#
+# or set:
+#   ARCHIVE_PREFIX="testfile-"
+# ------------------------------------------------------------
+
+ARCHIVE_MECHANISM="tar"
+ARCHIVE_PREFIX=""
+ARCHIVE_DATE_FORMAT="%Y%m%d"
+
+# ------------------------------------------------------------
+# Encryption
+# ------------------------------------------------------------
+
+ENCRYPTION_ALGORITHM="AES256"
+ENCRYPTION_KEY_FILE="/ws/linux/usr/bin/20260709.key"
+
+# ------------------------------------------------------------
+# Local audit/state
+# ------------------------------------------------------------
+
+LOG_DIR="/var/log/hicloud-upload"
+STATE_DIR="/var/lib/hicloud-upload"
+
+# ------------------------------------------------------------
+# Cloud list retry
+# ------------------------------------------------------------
+
+LIST_RETRIES=3
+LIST_RETRY_DELAY_SEC=10
+
+# ------------------------------------------------------------
+# Upload control
+#
+# 43200 = 12 hours
+# ------------------------------------------------------------
+
+UPLOAD_TIMEOUT_SEC=43200
+MONITOR_INTERVAL_SEC=30
+MONITOR_HEARTBEAT_SEC=300
+
+# ------------------------------------------------------------
+# Source safety
+#
+# Before upload:
+#   - source must really be NFS
+#   - newest file must be older than SOURCE_MIN_AGE_SEC
+#   - two recursive source snapshots must match
+# ------------------------------------------------------------
+
+SOURCE_STABILITY_INTERVAL_SEC=30
+SOURCE_MIN_AGE_SEC=300
+
+# ------------------------------------------------------------
+# Source file listing in console + audit log
+#
+# yes:
+#   After the source stability check succeeds, log:
+#
+#     ls -al --time-style=long-iso /alldata
+#
+# Each output row is prefixed with [SOURCE].
+#
+# no:
+#   Do not print/log the directory listing.
+# ------------------------------------------------------------
+
+LOG_SOURCE_FILE_LIST=yes
+
+# ------------------------------------------------------------
+# Temporary disk-space protection
+#
+# required ~= source_size * 125% + 10GB
+# ------------------------------------------------------------
+
+TEMP_SPACE_FACTOR_PERCENT=125
+TEMP_SPACE_RESERVE_GB=10
+
+# ------------------------------------------------------------
+# Post-upload verification
+#
+# After CLI reports success, script repeatedly runs "list"
+# and requires the exact archive name to exist in cloud.
+# ------------------------------------------------------------
+
+POST_VERIFY_RETRIES=6
+POST_VERIFY_DELAY_SEC=10
+
+# Also require literal CLI output "(RESULT) success".
+REQUIRE_RESULT_SUCCESS=yes
+
+# Remove unique per-run temp directory only after cloud verify.
+CLEANUP_TEMP_AFTER_SUCCESS=yes
+
+# Keep failed workspace for troubleshooting / manual resume.
+PRESERVE_FAILED_TEMP=yes
