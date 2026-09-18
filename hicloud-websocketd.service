@@ -1,0 +1,101 @@
+# /etc/systemd/system/hicloud-websocketd.service
+#
+# HiCloud Secure Backup Operations WebSocket backend
+# RHEL 9.4 / websocketd 0.4.1
+#
+# Production baseline:
+#   UI       : index_hicloud_v2.1.html
+#   Backend  : /ws/wsmanager3.sh
+#   Upload   : /ws/hicloud_latest_upload.sh    (v1.3.10)
+#   Recovery : /ws/hicloud_latest_recovery.sh  (v1.3.6)
+#
+# This unit intentionally restricts WebSocket Origin to the production
+# UI served from TCP/8083. Opening index.html directly with file:// will
+# therefore be rejected in production.
+#
+[Unit]
+Description=HiCloud Secure Backup Operations WebSocket Daemon
+Documentation=https://github.com/joewalnes/websocketd
+Wants=network-online.target
+After=network-online.target remote-fs.target
+
+ConditionFileIsExecutable=/ws/websocketd
+ConditionFileIsExecutable=/ws/wsmanager3.sh
+
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+
+User=root
+Group=root
+WorkingDirectory=/ws
+UMask=0077
+
+# websocketd cleans the subprocess environment. The HiCloud backend/vendor
+# CLI requires a deterministic root runtime, especially HOME=/root.
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="HOME=/root"
+Environment="USER=root"
+Environment="LOGNAME=root"
+Environment="SHELL=/bin/bash"
+Environment="LANG=C.UTF-8"
+Environment="LC_ALL=C.UTF-8"
+
+# Fail early if required backend programs are missing or wsmanager3 has
+# a shell syntax problem.
+ExecStartPre=/usr/bin/test -x /ws/websocketd
+ExecStartPre=/usr/bin/test -x /ws/wsmanager3.sh
+ExecStartPre=/usr/bin/test -x /ws/logGP_it.sh
+ExecStartPre=/usr/bin/test -x /ws/hicloud_latest_upload.sh
+ExecStartPre=/usr/bin/test -x /ws/hicloud_latest_recovery.sh
+ExecStartPre=/usr/bin/bash -n /ws/wsmanager3.sh
+
+# Bind only to the HiCloud management interface.
+# --origin permits the production UI on TCP/8083 by IP or hostname.
+# --maxforks prevents an unlimited number of websocket child processes.
+# --closems gives wsmanager3/children a grace period after disconnect.
+ExecStart=/ws/websocketd \
+    --address=192.168.167.68 \
+    --port=1234 \
+    --reverselookup=false \
+    --loglevel=access \
+    --maxforks=20 \
+    --closems=5000 \
+    --origin=192.168.167.68:8083,telegramsrv1:8083 \
+    --passenv=PATH,HOME,USER,LOGNAME,SHELL,LANG,LC_ALL \
+    /ws/wsmanager3.sh
+
+Restart=on-failure
+RestartSec=3s
+
+TimeoutStartSec=15s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+KillMode=control-group
+SendSIGKILL=yes
+
+# Resource/accounting safeguards. No MemoryMax is imposed because upload
+# and recovery children may handle large archives.
+LimitNOFILE=65536
+TasksMax=256
+CPUAccounting=yes
+MemoryAccounting=yes
+TasksAccounting=yes
+
+# Moderate hardening selected to avoid interfering with /alldata,
+# /data_bk, /root/.gnupg, or the HiCloud vendor CLI.
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hicloud-websocketd
+
+[Install]
+WantedBy=multi-user.target

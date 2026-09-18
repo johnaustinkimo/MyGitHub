@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store">
+<meta name="color-scheme" content="light">
+<title>HiCloud Secure Backup Operations</title>
+<style>
+:root{
+  --bg:#f4f7fb;--card:#fff;--line:#dce4ee;--text:#172033;--muted:#66758a;
+  --blue:#1769e0;--blue2:#0f56bc;--green:#18794e;--greenbg:#edf8f2;
+  --amber:#a86600;--amberbg:#fff7e8;--red:#b42318;--redbg:#fff1f0;
+  --console:#0c1422;--console2:#101b2c;--shadow:0 12px 28px rgba(20,32,54,.08)
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI","Noto Sans TC",Arial,sans-serif}
+button,input,textarea{font:inherit}
+.app{max-width:1500px;margin:auto;padding:20px}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:18px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#1769e0,#6f42c1);color:#fff;font-weight:800;letter-spacing:.4px}
+.brand h1{font-size:20px;margin:0}.brand p{font-size:13px;color:var(--muted);margin:3px 0 0}
+.badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.badge{border:1px solid var(--line);background:#f9fbfd;border-radius:999px;padding:7px 10px;font-size:13px;white-space:nowrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#9aa7b8;margin-right:6px}
+.dot.ok{background:var(--green)}.dot.warn{background:#d08700}.dot.bad{background:var(--red)}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px}
+.card,.opcard,.consolewrap,.statusbar{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.card{padding:17px;margin-bottom:18px}.card h2,.opcard h2{margin:0 0 6px;font-size:16px}
+.sub{margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.55}
+.field{margin:11px 0}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}
+.input{width:100%;padding:10px 11px;border:1px solid #cad5e3;border-radius:10px;outline:none;background:#fff;color:var(--text)}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(23,105,224,.1)}
+.row{display:flex;gap:8px}.btn{border:1px solid transparent;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--blue);color:#fff}.primary:hover:not(:disabled){background:var(--blue2)}
+.secondary{background:#fff;border-color:#cad5e3;color:#34445b}.warnbtn{background:#fff5e6;border-color:#edce95;color:#875300}.ghost{background:#fff;border-color:var(--line);color:#43536a}
+.user{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:13px}.user small{color:var(--muted)}
+.meta{display:grid;grid-template-columns:95px 1fr;gap:6px 8px;font-size:12px;margin-top:10px}.meta dt{color:var(--muted)}.meta dd{margin:0;word-break:break-all}
+.note{border:1px solid #d9e5f5;background:#f7fbff;border-radius:10px;padding:10px 11px;font-size:12px;line-height:1.5;color:#42536a}
+.hero{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}.hero h2{margin:0;font-size:22px}.hero p{margin:5px 0;color:var(--muted);font-size:13px}
+.busy{display:none;border:1px solid #edce95;background:#fff8ea;color:#7b520d;border-radius:999px;padding:8px 11px;font-size:13px;font-weight:700;white-space:nowrap}.busy.show{display:block}
+.statusbar{display:grid;grid-template-columns:1.1fr .8fr .8fr 1.25fr;gap:0;margin-bottom:18px;overflow:hidden}
+.stat{padding:13px 15px;border-right:1px solid var(--line);min-width:0}.stat:last-child{border-right:0}.stat .k{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}.stat .v{font-size:14px;font-weight:800;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stat .s{font-size:11px;color:var(--muted);margin-top:3px}
+.runtime{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+.runtimehead{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px 15px;border-bottom:1px solid var(--line)}
+.runtimehead h3{font-size:15px;margin:0}.runtimehead p{font-size:11px;color:var(--muted);margin:3px 0 0}
+.heartbeat{border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;background:#f8fafc;color:#53647a;white-space:nowrap}
+.heartbeat.ok{background:var(--greenbg);border-color:#b9dfcb;color:var(--green)}
+.heartbeat.warn{background:var(--amberbg);border-color:#efd5a4;color:var(--amber)}
+.heartbeat.bad{background:var(--redbg);border-color:#efc5c1;color:var(--red)}
+.runtimegrid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr}
+.metric{padding:13px 15px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
+.metric:nth-child(4n){border-right:0}.metric .mk{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.metric .mv{font-size:16px;font-weight:800;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric .ms{font-size:11px;color:var(--muted);margin-top:4px;min-height:16px}
+.phasepill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef3f8;border:1px solid #d7e0ea;color:#42536a;font-size:12px}
+.phasepill.download,.phasepill.upload{background:#eef6ff;border-color:#b9d5f6;color:#125cae}
+.phasepill.decrypt,.phasepill.pack{background:#f3efff;border-color:#d6c8fb;color:#6542a6}
+.phasepill.verify{background:#fff7e8;border-color:#efd5a4;color:#875300}
+.phasepill.success{background:var(--greenbg);border-color:#b9dfcb;color:var(--green)}
+.phasepill.failed,.phasepill.lost{background:var(--redbg);border-color:#efc5c1;color:var(--red)}
+.progressarea{padding:14px 15px;border-bottom:1px solid var(--line)}
+.progresshead{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:12px;margin-bottom:8px}.progresshead b{font-size:13px}
+.progress{height:12px;border-radius:999px;background:#e8eef5;overflow:hidden}.progressbar{height:100%;width:0;background:linear-gradient(90deg,#1769e0,#6f42c1);transition:width .35s ease}
+.progressmeta{display:flex;justify-content:space-between;gap:12px;margin-top:6px;color:var(--muted);font-size:11px;flex-wrap:wrap}
+.verifywrap{padding:14px 15px}.verifytitle{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:9px}.verifytitle b{font-size:12px}.verifytitle span{font-size:11px;color:var(--muted)}
+.verifygrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stage{border:1px solid var(--line);border-radius:10px;padding:8px 9px;background:#fafbfd;min-width:0}
+.stage .name{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stage .state{font-size:10px;color:var(--muted);margin-top:3px}
+.stage.running{background:var(--amberbg);border-color:#efd5a4}.stage.running .state{color:var(--amber)}
+.stage.pass{background:var(--greenbg);border-color:#b9dfcb}.stage.pass .state{color:var(--green)}
+.stage.fail{background:var(--redbg);border-color:#efc5c1}.stage.fail .state{color:var(--red)}
+.ops{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.ophead{padding:17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.ophead p{margin:4px 0 0;color:var(--muted);font-size:12px}.ver{font-size:11px;padding:4px 7px;border-radius:999px;background:#f0f5fb;border:1px solid var(--line);color:#42536a;white-space:nowrap}
+.opbody{padding:17px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.act{border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px;text-align:left;cursor:pointer;min-height:78px;transition:.15s ease}
+.act:hover:not(:disabled){border-color:#91b8ef;background:#f8fbff;transform:translateY(-1px)}.act:disabled{opacity:.45;cursor:not-allowed}.act strong{display:block;margin-bottom:4px}.act span{font-size:12px;color:var(--muted);line-height:1.35}.act.run{background:#fffaf1;border-color:#efd5a4}
+.consolehead{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800}.consoleactions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.toggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600}.toggle input{accent-color:var(--blue)}
+.console{width:100%;height:470px;resize:vertical;border:0;outline:0;padding:14px 15px;background:var(--console);color:#d8e2ef;font:13px/1.55 Consolas,"Cascadia Mono",monospace;tab-size:4}
+.last{padding:9px 14px;background:var(--console2);color:#98abc2;font-size:12px;border-top:1px solid #1d2b40;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.goodtxt{color:var(--green)}.badtxt{color:var(--red)}.warntxt{color:var(--amber)}
+dialog{border:0;border-radius:16px;padding:0;max-width:580px;width:calc(100% - 30px);box-shadow:0 26px 70px rgba(0,0,0,.24)}dialog::backdrop{background:rgba(18,30,48,.5)}
+.dbody{padding:21px}.dbody h3{margin:0 0 7px}.dbody p{font-size:13px;color:var(--muted);line-height:1.55}.preview{background:#f4f7fb;border:1px solid var(--line);border-radius:10px;padding:10px;font:12px Consolas,monospace;word-break:break-word;white-space:pre-wrap}
+.dactions{display:flex;justify-content:flex-end;gap:8px;padding:14px 21px;border-top:1px solid var(--line);background:#fafbfd}
+.smallwarn{margin-top:10px;padding:9px 10px;border:1px solid #efd5a4;background:#fffaf1;border-radius:9px;font-size:12px;color:#7b520d;line-height:1.45}
+@media(max-width:1100px){.statusbar{grid-template-columns:1fr 1fr}.stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}.runtimegrid{grid-template-columns:1fr 1fr}.metric:nth-child(2n){border-right:0}.verifygrid{grid-template-columns:1fr 1fr}} 
+@media(max-width:950px){.layout{grid-template-columns:1fr}.ops{grid-template-columns:1fr}}
+@media(max-width:620px){.app{padding:10px}.top{align-items:flex-start;flex-direction:column}.badges{justify-content:flex-start}.grid{grid-template-columns:1fr}.row{flex-direction:column}.console{height:360px}.statusbar{grid-template-columns:1fr}.stat{border-right:0;border-bottom:1px solid var(--line)}.stat:last-child{border-bottom:0}.ophead{flex-direction:column}.runtimegrid{grid-template-columns:1fr}.metric{border-right:0}.verifygrid{grid-template-columns:1fr}.runtimehead{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand">
+    <div class="logo">HC</div>
+    <div>
+      <h1>HiCloud Secure Backup Operations</h1>
+      <p>加密分持資料上雲 / 雲端備份下載還原操作台 · UI v2.2</p>
+    </div>
+  </div>
+  <div class="badges">
+    <span class="badge"><span id="connDot" class="dot bad"></span><span id="connText">Disconnected</span></span>
+    <span class="badge"><span id="authDot" class="dot bad"></span><span id="authText">Not Logged In</span></span>
+    <span class="badge"><span id="opDot" class="dot"></span><span id="opText">Idle</span></span>
+    <span class="badge" id="clock">--</span>
+  </div>
+</header>
+
+<div class="layout">
+<aside>
+  <section class="card">
+    <h2>連線設定</h2>
+    <p class="sub">斷線會自動嘗試重連；重新連線後不會自動登入。</p>
+    <div class="field"><label>WebSocket Endpoint</label><input id="wsUrl" class="input" spellcheck="false"></div>
+    <div class="row">
+      <button id="connectBtn" class="btn primary">Connect</button>
+      <button id="disconnectBtn" class="btn secondary">Disconnect</button>
+    </div>
+    <dl class="meta">
+      <dt>Reconnect</dt><dd id="reconnectInfo">-</dd>
+      <dt>Browser</dt><dd id="browserNet">Online</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>使用者登入</h2>
+    <p class="sub">登入成功後才開放 HiCloud 作業。帳密不寫入 LocalStorage。</p>
+    <div class="field"><label>帳號</label><input id="userid" class="input" autocomplete="username"></div>
+    <div class="field"><label>密碼</label><input id="userpw" class="input" type="password" autocomplete="current-password"></div>
+    <div class="row">
+      <button id="loginBtn" class="btn primary">登入</button>
+      <button id="logoutBtn" class="btn secondary" disabled>登出</button>
+    </div>
+    <div class="user">
+      <b id="who">尚未登入</b><br>
+      <small id="role">Role: -</small>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>操作原則</h2>
+    <div class="note">
+      查詢功能直接執行；Upload / Recovery Run 需二次確認。v2 為同步 WebSocket 模式，長時間作業期間請保持瀏覽器與連線開啟。
+    </div>
+  </section>
+</aside>
+
+<main>
+  <div class="hero">
+    <div>
+      <h2>雲端備份作業中心</h2>
+      <p>Production baseline：Upload v1.3.10 / Recovery v1.3.6</p>
+    </div>
+    <div id="busy" class="busy">作業執行中…</div>
+  </div>
+
+  <section class="statusbar" aria-label="Operation status">
+    <div class="stat"><div class="k">Current Operation</div><div id="currentOp" class="v">Idle</div><div id="currentReq" class="s">Request: -</div></div>
+    <div class="stat"><div class="k">Elapsed</div><div id="elapsed" class="v">00:00:00</div><div id="startedAt" class="s">Started: -</div></div>
+    <div class="stat"><div class="k">Last Result</div><div id="lastResult" class="v">-</div><div id="lastRc" class="s">RC: -</div></div>
+    <div class="stat"><div class="k">Last Archive</div><div id="lastArchive" class="v">-</div><div id="lastSize" class="s">Size: -</div></div>
+  </section>
+
+  <section class="runtime" id="runtimeDash" aria-label="Long-running operation dashboard">
+    <div class="runtimehead">
+      <div><h3>Long-running Operation Dashboard</h3><p>僅解析既有 Upload / Recovery output；不改變後端流程。</p></div>
+      <div id="heartbeat" class="heartbeat">Idle</div>
+    </div>
+    <div class="runtimegrid">
+      <div class="metric"><div class="mk">Current Phase</div><div class="mv"><span id="phase" class="phasepill">IDLE</span></div><div id="phaseDetail" class="ms">Waiting for operation.</div></div>
+      <div class="metric"><div class="mk">Last Activity</div><div id="lastActivity" class="mv">-</div><div id="activityDetail" class="ms">No backend output yet.</div></div>
+      <div class="metric"><div class="mk">Downloaded</div><div id="downloadBytes" class="mv">-</div><div id="downloadDetail" class="ms">Remote total is not reported during download.</div></div>
+      <div class="metric"><div class="mk">Current Throughput</div><div id="downloadSpeed" class="mv">-</div><div id="speedDetail" class="ms">Calculated from consecutive progress samples.</div></div>
+    </div>
+    <div class="progressarea">
+      <div class="progresshead"><b>Decrypt Progress</b><span id="decryptPct">0.00%</span></div>
+      <div class="progress"><div id="decryptBar" class="progressbar"></div></div>
+      <div class="progressmeta"><span id="decryptDetail">Waiting for encrypted_size / decrypt_size.</span><span id="decryptBytes">-</span></div>
+    </div>
+    <div class="verifywrap">
+      <div class="verifytitle"><b>Post-Verify Stages</b><span id="verifySummary">Waiting</span></div>
+      <div class="verifygrid">
+        <div id="pvGpg" class="stage"><div class="name">GPG Signature</div><div class="state">Pending</div></div>
+        <div id="pvL1" class="stage"><div class="name">Decrypt Layer 1</div><div class="state">Pending</div></div>
+        <div id="pvL2" class="stage"><div class="name">Decrypt Layer 2</div><div class="state">Pending</div></div>
+        <div id="pvL3" class="stage"><div class="name">Decrypt Layer 3</div><div class="state">Pending</div></div>
+        <div id="pvZstd" class="stage"><div class="name">zstd Integrity</div><div class="state">Pending</div></div>
+        <div id="pvInner" class="stage"><div class="name">Inner Tar</div><div class="state">Pending</div></div>
+        <div id="pvSafety" class="stage"><div class="name">Path / Type Safety</div><div class="state">Pending</div></div>
+        <div id="pvExtract" class="stage"><div class="name">Restore Extract</div><div class="state">Pending</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="ops">
+    <section class="opcard">
+      <div class="ophead">
+        <div><h2>① HiCloud Upload</h2><p>僅處理 *.o3.signed，individual TargetPath，flat outer tar。</p></div>
+        <span class="ver">v1.3.10</span>
+      </div>
+      <div class="opbody"><div class="grid">
+        <button class="act auth" data-k="UC" disabled><strong>Check Source</strong><span>NFS、來源穩定性、Target manifest、暫存空間。</span></button>
+        <button class="act auth" data-k="UL" disabled><strong>Cloud List</strong><span>列出目前 HiCloud 上的物件。</span></button>
+        <button class="act auth" data-k="US" disabled><strong>Upload Status</strong><span>查看 upload completion marker。</span></button>
+        <button class="act run auth" data-k="UR" disabled><strong>Run Daily Upload</strong><span>使用當日 YYYYMMDD archive name。</span></button>
+        <button class="act run auth" data-k="UX" disabled style="grid-column:1/-1"><strong>Run Custom Upload</strong><span>手動指定 ArchiveName，不含 .tar。</span></button>
+      </div></div>
+    </section>
+
+    <section class="opcard">
+      <div class="ophead">
+        <div><h2>② HiCloud Recovery</h2><p>支援 legacy flat 與 nested outer member，含 post-verification。</p></div>
+        <span class="ver">v1.3.6</span>
+      </div>
+      <div class="opbody"><div class="grid">
+        <button class="act auth" data-k="RL" disabled><strong>Cloud List</strong><span>列出可供還原的雲端備份。</span></button>
+        <button class="act auth" data-k="RX" disabled><strong>Latest Backup</strong><span>查詢目前最新 YYYYMMDD.tar。</span></button>
+        <button class="act auth" data-k="RS" disabled><strong>Recovery Status</strong><span>檢查 recovery marker 與本機檔案。</span></button>
+        <button class="act run auth" data-k="RR" disabled><strong>Run Latest Recovery</strong><span>下載、解密並執行 post-verification。</span></button>
+      </div></div>
+    </section>
+  </div>
+
+  <section class="consolewrap">
+    <div class="consolehead">
+      <span>⌘ Operation Console</span>
+      <div class="consoleactions">
+        <label class="toggle"><input id="followOutput" type="checkbox" checked> Follow output</label>
+        <button id="copyLastBtn" class="btn ghost">Copy Last Run</button>
+        <button id="copyBtn" class="btn ghost">Copy All</button>
+        <button id="saveBtn" class="btn ghost">Download</button>
+        <button id="clearBtn" class="btn ghost">Clear</button>
+      </div>
+    </div>
+    <textarea id="console" class="console" readonly></textarea>
+    <div class="last">
+      <span id="last">Ready.</span>
+      <span id="sessionInfo">Session: -</span>
+    </div>
+  </section>
+</main>
+</div>
+</div>
+
+<dialog id="confirmDlg">
+  <div class="dbody">
+    <h3 id="confirmTitle">確認執行</h3>
+    <p id="confirmText"></p>
+    <div id="preview" class="preview"></div>
+    <div class="smallwarn">長時間作業期間請保持此頁面與 WebSocket 連線開啟；避免重新整理、關閉分頁或中斷網路。</div>
+  </div>
+  <div class="dactions">
+    <button id="cancelConfirm" class="btn secondary">取消</button>
+    <button id="runConfirm" class="btn warnbtn">確認執行</button>
+  </div>
+</dialog>
+
+<dialog id="customDlg">
+  <div class="dbody">
+    <h3>自訂 Upload Archive Name</h3>
+    <p>不含副檔名，只允許英數、點、底線與連字號。</p>
+    <div class="field"><input id="archiveName" class="input" placeholder="testfile-20260918"></div>
+    <small id="archiveErr" style="color:var(--red)"></small>
+  </div>
+  <div class="dactions">
+    <button id="cancelCustom" class="btn secondary">取消</button>
+    <button id="nextCustom" class="btn primary">下一步</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+const UI_VERSION="2.2";
+const UPLOAD_VERSION="1.3.10";
+const RECOVERY_VERSION="1.3.6";
+const $=id=>document.getElementById(id);
+
+const S={
+  ws:null,connected:false,auth:false,authPending:false,user:"",role:"",
+  busy:false,manual:false,retry:0,timer:null,retryTicker:null,pending:null,
+  currentReq:"",currentLabel:"",currentDomain:"",opStarted:0,elapsedTimer:null,
+  lastRunStart:-1,lastRunEnd:-1,lastArchive:"",lastSize:"",lastRc:null,
+  lastResult:"",endpoint:"",
+  phase:"IDLE",phaseDetail:"Waiting for operation.",
+  lastActivityAt:0,lastActivityStamp:"",watchdogTimer:null,operationEnded:false,
+  downloadBytes:0,downloadLastBytes:0,downloadLastElapsed:0,downloadSpeed:0,
+  decryptTotal:0,decryptBytes:0
+};
+
+const A={
+  UC:{d:"UPLOAD",a:"CHECK_SOURCE",label:"Upload / Check Source"},
+  UL:{d:"UPLOAD",a:"LIST",label:"Upload / Cloud List"},
+  US:{d:"UPLOAD",a:"STATUS",label:"Upload / Status"},
+  UR:{d:"UPLOAD",a:"RUN",label:"Upload / Run Daily",confirm:true},
+  RL:{d:"RECOVERY",a:"LIST",label:"Recovery / Cloud List"},
+  RX:{d:"RECOVERY",a:"LATEST",label:"Recovery / Latest"},
+  RS:{d:"RECOVERY",a:"STATUS",label:"Recovery / Status"},
+  RR:{d:"RECOVERY",a:"RUN",label:"Recovery / Run Latest",confirm:true}
+};
+
+function stamp(){
+  return new Intl.DateTimeFormat("zh-TW",{
+    year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false
+  }).format(new Date());
+}
+
+function ymd(){
+  const p=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+  const m=Object.fromEntries(p.map(x=>[x.type,x.value]));
+  return `${m.year}${m.month}${m.day}`;
+}
+
+function fmtElapsed(sec){
+  sec=Math.max(0,Math.floor(sec||0));
+  const h=String(Math.floor(sec/3600)).padStart(2,"0");
+  const m=String(Math.floor((sec%3600)/60)).padStart(2,"0");
+  const s=String(sec%60).padStart(2,"0");
+  return `${h}:${m}:${s}`;
+}
+
+function defaultUrl(){
+  const p=location.protocol==="https:"?"wss:":"ws:";
+  return `${p}//${location.hostname||"192.168.167.68"}:1234/`;
+}
+
+function log(x){
+  const c=$("console");
+  x=String(x??"").replace(/\r/g,"");
+  c.value+=x+(x.endsWith("\n")?"":"\n");
+  if(c.value.length>2000000){
+    c.value="[UI] Output truncated; newest 1.5 MB retained.\n"+c.value.slice(-1500000);
+    S.lastRunStart=Math.max(0,S.lastRunStart-(c.value.length-1500000));
+  }
+  if($("followOutput").checked)c.scrollTop=c.scrollHeight;
+}
+
+function uilog(x){log(`[UI ${stamp()}] ${x}`)}
+
+function conn(kind,text){
+  $("connText").textContent=text;
+  $("connDot").className="dot "+kind;
+}
+
+function authBadge(){
+  $("authDot").className="dot "+(S.auth?"ok":"bad");
+  $("authText").textContent=S.auth?`${S.user} / ${S.role}`:"Not Logged In";
+}
+
+function opBadge(){
+  $("opDot").className="dot "+(S.busy?"warn":"ok");
+  $("opText").textContent=S.busy?"Busy":"Idle";
+}
+
+function update(){
+  document.querySelectorAll(".auth").forEach(b=>b.disabled=!(S.connected&&S.auth)||S.busy);
+  $("userid").disabled=S.auth||S.authPending||!S.connected;
+  $("userpw").disabled=S.auth||S.authPending||!S.connected;
+  $("loginBtn").disabled=S.auth||S.authPending||!S.connected;
+  $("logoutBtn").disabled=!S.auth||!S.connected||S.busy;
+  $("busy").classList.toggle("show",S.busy);
+  $("connectBtn").disabled=S.connected||!!(S.ws&&S.ws.readyState===WebSocket.CONNECTING);
+  $("disconnectBtn").disabled=!S.connected;
+  authBadge();opBadge();
+}
+
+function auth(ok,user="",role=""){
+  S.auth=ok;S.authPending=false;S.user=ok?user:"";S.role=ok?role:"";
+  $("who").textContent=ok?user:"尚未登入";
+  $("role").textContent=`Role: ${ok?role:"-"}`;
+  update();
+}
+
+function startElapsed(){
+  clearInterval(S.elapsedTimer);
+  if(!S.opStarted){$("elapsed").textContent="00:00:00";return}
+  const tick=()=>$("elapsed").textContent=fmtElapsed((Date.now()-S.opStarted)/1000);
+  tick();S.elapsedTimer=setInterval(tick,1000);
+}
+
+function stopElapsed(){
+  clearInterval(S.elapsedTimer);S.elapsedTimer=null;
+}
+
+function busy(v,label="作業執行中…"){
+  S.busy=v;$("busy").textContent=label;
+  if(!v){S.currentReq="";S.currentLabel="";S.opStarted=0;stopElapsed()}
+  update();
+}
+
+function b64(s){
+  const bytes=new TextEncoder().encode(s);let x="";
+  bytes.forEach(v=>x+=String.fromCharCode(v));
+  return btoa(x);
+}
+
+function send(m){
+  if(!S.ws||S.ws.readyState!==WebSocket.OPEN){uilog("WebSocket 尚未連線。");return false}
+  S.ws.send(m);return true;
+}
+
+function saveEndpoint(url){
+  try{localStorage.setItem("hicloud.ws.endpoint",url)}catch{}
+}
+
+function loadEndpoint(){
+  try{return localStorage.getItem("hicloud.ws.endpoint")||defaultUrl()}catch{return defaultUrl()}
+}
+
+function clearRetryTimers(){
+  clearTimeout(S.timer);clearInterval(S.retryTicker);S.timer=null;S.retryTicker=null;
+  $("reconnectInfo").textContent="-";
+}
+
+function scheduleReconnect(){
+  clearRetryTimers();
+  const delay=Math.min(30000,2000*Math.pow(2,S.retry++));
+  let remain=Math.ceil(delay/1000);
+  conn("warn",`Reconnect in ${remain}s`);
+  $("reconnectInfo").textContent=`Attempt ${S.retry} in ${remain}s`;
+  S.retryTicker=setInterval(()=>{
+    remain=Math.max(0,remain-1);
+    $("reconnectInfo").textContent=`Attempt ${S.retry} in ${remain}s`;
+  },1000);
+  S.timer=setTimeout(()=>{clearRetryTimers();connect()},delay);
+}
+
+function connect(){
+  clearRetryTimers();S.manual=false;
+  const url=$("wsUrl").value.trim();
+  if(!/^wss?:\/\/\S+$/i.test(url)){uilog("WebSocket URL 格式錯誤。");return}
+  if(S.ws&&S.ws.readyState<2)return;
+  saveEndpoint(url);S.endpoint=url;conn("warn","Connecting");
+  try{
+    const w=new WebSocket(url);S.ws=w;update();
+    w.onopen=()=>{
+      S.connected=true;S.retry=0;clearRetryTimers();conn("ok","Connected");
+      auth(false);uilog(`Connected: ${url}`);
+      $("sessionInfo").textContent=`Session: ${url}`;
+      update();
+    };
+    w.onmessage=async e=>handle(typeof e.data==="string"?e.data:await e.data.text());
+    w.onerror=()=>conn("bad","Connection Error");
+    w.onclose=e=>{
+      const wasBusy=S.busy;
+      S.connected=false;S.ws=null;conn("bad","Disconnected");auth(false);busy(false);
+      $("sessionInfo").textContent="Session: disconnected";
+      if(wasBusy){S.operationEnded=true;S.lastRc=1;setPhase("CONNECTION LOST","WebSocket disconnected during active operation.");stopWatchdog()}
+      uilog(`WebSocket disconnected (code=${e.code}).${wasBusy?" Active operation connection was lost.":""}`);
+      update();
+      if(!S.manual)scheduleReconnect();
+    };
+  }catch(e){uilog(e.message);update()}
+}
+
+function disconnect(){
+  if(S.busy&&!confirm("目前作業執行中。中斷 WebSocket 可能影響目前作業，仍要 Disconnect？"))return;
+  S.manual=true;clearRetryTimers();
+  if(S.ws)S.ws.close(1000,"manual");
+  else{S.connected=false;auth(false);conn("bad","Disconnected");update()}
+}
+
+function login(){
+  const u=$("userid").value.trim(),p=$("userpw").value;
+  if(!u||!p){uilog("請輸入帳號與密碼。");return}
+  S.authPending=true;update();
+  if(!send(`@AUTH|LOGIN|${b64(u)}|${b64(p)}`)){S.authPending=false;update()}
+  $("userpw").value="";
+}
+
+function logout(){
+  if(!S.auth)return;
+  send("@AUTH|LOGOUT");
+}
+
+
+const POST_STAGE_IDS=["pvGpg","pvL1","pvL2","pvL3","pvZstd","pvInner","pvSafety","pvExtract"];
+
+function fmtBytes(n){
+  n=Number(n||0);
+  if(!Number.isFinite(n)||n<0)return "-";
+  const u=["B","KiB","MiB","GiB","TiB"];let i=0,v=n;
+  while(v>=1024&&i<u.length-1){v/=1024;i++}
+  const d=i===0?0:(v>=100?0:v>=10?1:2);
+  return `${v.toFixed(d)} ${u[i]}`;
+}
+
+function fmtRate(n){
+  n=Number(n||0);
+  return n>0?`${fmtBytes(n)}/s`:"-";
+}
+
+function setPhase(phase,detail=""){
+  phase=String(phase||"IDLE").toUpperCase();
+  S.phase=phase;if(detail)S.phaseDetail=detail;
+  const el=$("phase");
+  el.textContent=phase;
+  let cls="phasepill";
+  if(/DOWNLOAD/.test(phase))cls+=" download";
+  else if(/DECRYPT/.test(phase))cls+=" decrypt";
+  else if(/POST|VERIFY/.test(phase))cls+=" verify";
+  else if(/UPLOAD/.test(phase))cls+=" upload";
+  else if(/PACK/.test(phase))cls+=" pack";
+  else if(/SUCCESS|COMPLETE/.test(phase))cls+=" success";
+  else if(/FAIL|ERROR/.test(phase))cls+=" failed";
+  else if(/LOST|DISCONNECT/.test(phase))cls+=" lost";
+  el.className=cls;
+  $("phaseDetail").textContent=S.phaseDetail||"-";
+  if(S.busy)$("busy").textContent=`${S.currentLabel||"作業執行中"} · ${phase}`;
+}
+
+function setStage(id,state){
+  const el=$(id);if(!el)return;
+  const s=String(state||"pending").toLowerCase();
+  el.className="stage"+(s==="pending"?"":` ${s}`);
+  const t=el.querySelector(".state");
+  if(t)t.textContent=s==="pass"?"PASS":s==="fail"?"FAIL":s==="running"?"Running":"Pending";
+  updateVerifySummary();
+}
+
+function updateVerifySummary(){
+  let pass=0,run=0,fail=0;
+  for(const id of POST_STAGE_IDS){
+    const c=$(id).classList;
+    if(c.contains("pass"))pass++;
+    if(c.contains("running"))run++;
+    if(c.contains("fail"))fail++;
+  }
+  $("verifySummary").textContent=fail?`FAILED · ${pass}/${POST_STAGE_IDS.length} passed`
+    :run?`Running · ${pass}/${POST_STAGE_IDS.length} passed`
+    :pass?`${pass}/${POST_STAGE_IDS.length} passed`
+    :"Waiting";
+}
+
+function resetRuntimeDashboard(){
+  S.phase="IDLE";S.phaseDetail="Waiting for operation.";
+  S.lastActivityAt=0;S.lastActivityStamp="";S.operationEnded=false;
+  S.downloadBytes=0;S.downloadLastBytes=0;S.downloadLastElapsed=0;S.downloadSpeed=0;
+  S.decryptTotal=0;S.decryptBytes=0;
+  setPhase("STARTING","Waiting for backend progress output.");
+  $("lastActivity").textContent="-";$("activityDetail").textContent="Waiting for backend output.";
+  $("downloadBytes").textContent="-";$("downloadSpeed").textContent="-";
+  $("downloadDetail").textContent="Remote total is not reported during download.";
+  $("speedDetail").textContent="Calculated from consecutive progress samples.";
+  $("decryptPct").textContent="0.00%";$("decryptBar").style.width="0%";
+  $("decryptDetail").textContent="Waiting for encrypted_size / decrypt_size.";$("decryptBytes").textContent="-";
+  for(const id of POST_STAGE_IDS)setStage(id,"pending");
+  $("heartbeat").className="heartbeat";$("heartbeat").textContent="Waiting for output";
+}
+
+function touchActivity(){
+  if(!S.busy)return;
+  S.lastActivityAt=Date.now();S.lastActivityStamp=stamp();
+  $("lastActivity").textContent="just now";
+  $("activityDetail").textContent=`Last output: ${S.lastActivityStamp}`;
+  updateWatchdog();
+}
+
+function updateWatchdog(){
+  const hb=$("heartbeat");
+  if(!S.busy){
+    if(S.operationEnded){
+      hb.className="heartbeat "+(S.lastRc===0?"ok":"bad");
+      hb.textContent=S.lastRc===0?"Completed":"Completed with error";
+    }else{
+      hb.className="heartbeat";hb.textContent="Idle";
+    }
+    return;
+  }
+  if(!S.lastActivityAt){
+    hb.className="heartbeat warn";hb.textContent="Waiting for backend output";
+    return;
+  }
+  const age=Math.max(0,Math.floor((Date.now()-S.lastActivityAt)/1000));
+  $("lastActivity").textContent=age<2?"just now":`${age}s ago`;
+  if(age>75){
+    hb.className="heartbeat warn";hb.textContent=`No progress output for ${age}s`;
+    $("activityDetail").textContent=`Watchdog warning · last output ${S.lastActivityStamp}`;
+  }else{
+    hb.className="heartbeat ok";hb.textContent=`Output heartbeat OK · ${age}s`;
+    $("activityDetail").textContent=`Last output: ${S.lastActivityStamp}`;
+  }
+}
+
+function startWatchdog(){
+  clearInterval(S.watchdogTimer);
+  S.watchdogTimer=setInterval(updateWatchdog,1000);
+  updateWatchdog();
+}
+
+function stopWatchdog(){
+  clearInterval(S.watchdogTimer);S.watchdogTimer=null;updateWatchdog();
+}
+
+function updateDownload(bytes,elapsed){
+  bytes=Number(bytes);elapsed=Number(elapsed);
+  let speed=0;
+  if(S.downloadLastBytes>0&&elapsed>S.downloadLastElapsed&&bytes>=S.downloadLastBytes){
+    speed=(bytes-S.downloadLastBytes)/(elapsed-S.downloadLastElapsed);
+  }else if(elapsed>0){
+    speed=bytes/elapsed;
+  }
+  S.downloadBytes=bytes;S.downloadSpeed=speed;
+  S.downloadLastBytes=bytes;S.downloadLastElapsed=elapsed;
+  $("downloadBytes").textContent=fmtBytes(bytes);
+  $("downloadDetail").textContent=`Backend elapsed: ${fmtElapsed(elapsed)}`;
+  $("downloadSpeed").textContent=fmtRate(speed);
+  $("speedDetail").textContent=speed>0?"Current sample throughput":"Waiting for next progress sample.";
+}
+
+function updateDecrypt(total,done){
+  total=Number(total);done=Number(done);
+  S.decryptTotal=total;S.decryptBytes=done;
+  const pct=total>0?Math.max(0,Math.min(100,done*100/total)):0;
+  $("decryptPct").textContent=`${pct.toFixed(2)}%`;
+  $("decryptBar").style.width=`${pct}%`;
+  $("decryptDetail").textContent=total>0?`${fmtBytes(done)} / ${fmtBytes(total)}`:"Waiting for encrypted_size.";
+  $("decryptBytes").textContent=total>0?`${done.toLocaleString()} / ${total.toLocaleString()} bytes`:"-";
+}
+
+function parseRuntimeLine(line){
+  let m;
+
+  if((m=line.match(/phase changed:\s*([A-Z_-]+)\s*->\s*([A-Z_-]+).*?elapsed=(\d+)s/i))){
+    setPhase(m[2],`Backend elapsed: ${fmtElapsed(Number(m[3]))}`);
+  }
+
+  if((m=line.match(/download in-progress:\s*archive=(.+?)\s+size=(\d+)\s+bytes\s+elapsed=(\d+)s/i))){
+    if(!S.lastArchive){S.lastArchive=m[1].trim();$("lastArchive").textContent=S.lastArchive}
+    setPhase("DOWNLOAD",`Downloading ${m[1].trim()}`);
+    updateDownload(m[2],m[3]);
+  }
+
+  if((m=line.match(/decrypt in-progress:\s*archive=(.+?)\s+encrypted_size=(\d+)\s+decrypt_size=(\d+)\s+bytes\s+elapsed=(\d+)s/i))){
+    if(!S.lastArchive){S.lastArchive=m[1].trim();$("lastArchive").textContent=S.lastArchive}
+    setPhase("DECRYPT",`Decrypting ${m[1].trim()} · backend ${fmtElapsed(Number(m[4]))}`);
+    updateDecrypt(m[2],m[3]);
+  }
+
+  if(/post-recovery verification started/i.test(line))setPhase("POST-VERIFY","Recovery integrity validation in progress.");
+
+  if(/GPG signature verification started/i.test(line))setStage("pvGpg","running");
+  if(/GPG signature VALID/i.test(line))setStage("pvGpg","pass");
+
+  if(/GPG decrypt layer1-.* started/i.test(line))setStage("pvL1","running");
+  if(/GPG decrypt layer1-.* successful/i.test(line))setStage("pvL1","pass");
+  if(/GPG decrypt layer2-.* started/i.test(line))setStage("pvL2","running");
+  if(/GPG decrypt layer2-.* successful/i.test(line))setStage("pvL2","pass");
+  if(/GPG decrypt layer3-.* started/i.test(line))setStage("pvL3","running");
+  if(/GPG decrypt layer3-.* successful/i.test(line))setStage("pvL3","pass");
+
+  if(/zstd integrity test started/i.test(line))setStage("pvZstd","running");
+  if(/zstd integrity test successful/i.test(line))setStage("pvZstd","pass");
+
+  if(/inner tar stream verification started/i.test(line))setStage("pvInner","running");
+  if(/inner tar verification successful/i.test(line))setStage("pvInner","pass");
+
+  if(/inner tar path\/type safety check successful/i.test(line))setStage("pvSafety","pass");
+
+  if(/inner restore extraction started/i.test(line))setStage("pvExtract","running");
+  if(/inner restore extraction successful/i.test(line))setStage("pvExtract","pass");
+
+  if(/^UPLOAD SUCCESS$/.test(line))setPhase("SUCCESS","Upload and cloud verification completed.");
+  if(/^RECOVERY SUCCESS$/.test(line))setPhase("SUCCESS","Recovery and post-verification completed.");
+
+  if(/\[ERROR\]/.test(line)||/post-recovery verification FAILED/i.test(line)||/scheduled .* job failed/i.test(line)){
+    setPhase("FAILED","Backend reported an error. See Operation Console.");
+    const low=line.toLowerCase();
+    if(low.includes("gpg signature"))setStage("pvGpg","fail");
+    if(low.includes("layer1"))setStage("pvL1","fail");
+    if(low.includes("layer2"))setStage("pvL2","fail");
+    if(low.includes("layer3"))setStage("pvL3","fail");
+    if(low.includes("zstd"))setStage("pvZstd","fail");
+    if(low.includes("inner tar")&&low.includes("safety"))setStage("pvSafety","fail");
+    else if(low.includes("inner tar"))setStage("pvInner","fail");
+    if(low.includes("extract"))setStage("pvExtract","fail");
+  }
+}
+
+function parseOperationalLine(line){
+  let m;
+  if((m=line.match(/^archive=(.+)$/))) {
+    S.lastArchive=m[1].trim();$("lastArchive").textContent=S.lastArchive;
+  }
+  if((m=line.match(/^packed_archive_size_observed=([0-9]+)(?:\s+\(([^)]+)\))?/))){
+    S.lastSize=m[2]||`${m[1]} bytes`;$("lastSize").textContent=`Size: ${S.lastSize}`;
+  }else if((m=line.match(/^size=([0-9]+)\s+bytes$/))){
+    S.lastSize=`${m[1]} bytes`;$("lastSize").textContent=`Size: ${S.lastSize}`;
+  }
+  if(line==="UPLOAD SUCCESS"||line==="RECOVERY SUCCESS"){
+    S.lastResult=line;$("lastResult").textContent=line;
+  }
+}
+
+function handle(msg){
+  for(const line of String(msg).replace(/\r/g,"").split("\n")){
+    if(!line)continue;
+
+    if(line==="@AUTH|LOGOUT|OK"){
+      auth(false);uilog("Logged out.");continue;
+    }
+    if(line.startsWith("@AUTH|OK|")){
+      const r=line.split("|")[2]||"USER";
+      auth(true,$("userid").value.trim(),r);
+      uilog(`登入成功，Role=${r}`);continue;
+    }
+    if(line.startsWith("@AUTH|ERR|")){
+      auth(false);uilog("登入失敗："+line.slice(10));continue;
+    }
+    if(line.startsWith("@BEGIN|")){
+      const p=line.split("|");
+      const req=p[1]||"-",label=p.slice(2).join("|")||"Operation";
+      S.currentReq=req;S.currentLabel=label;S.currentDomain=label.startsWith("Recovery")?"RECOVERY":label.startsWith("Upload")?"UPLOAD":"";
+      S.opStarted=Date.now();S.operationEnded=false;
+      S.lastRunStart=$("console").value.length;
+      $("currentOp").textContent=label;$("currentReq").textContent=`Request: ${req}`;
+      $("startedAt").textContent=`Started: ${stamp()}`;startElapsed();
+      busy(true,label);resetRuntimeDashboard();touchActivity();startWatchdog();
+      $("last").textContent=`Running — ${stamp()}`;
+      log("");log("================================================================");log(`[BEGIN ${stamp()}] ${label}`);
+      continue;
+    }
+    if(line.startsWith("@END|")){
+      const p=line.split("|"),req=p[1]||"-",rc=Number(p[2]??1);
+      log("================================================================");log(`[END ${stamp()}] rc=${rc}`);log("");
+      S.lastRunEnd=$("console").value.length;S.lastRc=rc;
+      $("lastRc").textContent=`RC: ${rc}`;
+      $("lastResult").textContent=rc===0?(S.lastResult||"SUCCESS"):"FAILED";
+      $("lastResult").className="v "+(rc===0?"goodtxt":"badtxt");
+      $("last").textContent=rc===0?`Completed successfully — ${stamp()}`:`Completed with error rc=${rc} — ${stamp()}`;
+      if(S.opStarted)$("elapsed").textContent=fmtElapsed((Date.now()-S.opStarted)/1000);
+      S.operationEnded=true;
+      if(rc===0&&S.phase!=="SUCCESS")setPhase("SUCCESS","Operation completed successfully.");
+      if(rc!==0)setPhase("FAILED",`Operation ended with rc=${rc}.`);
+      $("currentOp").textContent="Idle";$("currentReq").textContent="Request: -";
+      busy(false);stopWatchdog();continue;
+    }
+    if(line.startsWith("@ERROR|")){
+      const p=line.split("|"),req=p[1]||"-",text=p.slice(2).join("|");
+      log(`[BACKEND ERROR] request=${req} ${text}`);
+      S.lastRunEnd=$("console").value.length;S.lastRc=1;
+      $("lastResult").textContent="BACKEND ERROR";$("lastResult").className="v badtxt";
+      $("lastRc").textContent="RC: 1";$("last").textContent=`Backend error — ${stamp()}`;
+      if(S.opStarted)$("elapsed").textContent=fmtElapsed((Date.now()-S.opStarted)/1000);
+      S.operationEnded=true;setPhase("FAILED","Backend protocol error. See Operation Console.");
+      $("currentOp").textContent="Idle";$("currentReq").textContent="Request: -";
+      busy(false);stopWatchdog();continue;
+    }
+
+    if(S.busy)touchActivity();
+    parseRuntimeLine(line);
+    parseOperationalLine(line);
+    log(line);
+  }
+}
+
+function exec(def,arg=""){
+  if(!S.auth||S.busy)return;
+  const id=`${Date.now()}-${Math.random().toString(16).slice(2,8)}`;
+  S.lastResult="";S.lastArchive="";S.lastSize="";
+  $("lastResult").textContent="-";$("lastResult").className="v";
+  $("lastRc").textContent="RC: -";$("lastArchive").textContent="-";$("lastSize").textContent="Size: -";
+  if(!send(`@ACTION|${id}|${def.d}|${def.a}|${arg?b64(arg):""}`))return;
+}
+
+function choose(k){
+  if(k==="UX"){
+    $("archiveName").value="";$("archiveErr").textContent="";$("customDlg").showModal();return;
+  }
+  const d=A[k];if(!d)return;
+  if(d.confirm){
+    S.pending={d,arg:""};
+    $("confirmTitle").textContent="確認執行長時間作業";
+    $("confirmText").textContent=`即將執行：${d.label}`;
+    $("preview").textContent=d.d==="UPLOAD"
+      ? `hicloud_latest_upload.sh run\nExpected archive: ${ymd()}.tar`
+      : "hicloud_latest_recovery.sh run\nTarget: latest YYYYMMDD.tar";
+    $("confirmDlg").showModal();
+  }else exec(d);
+}
+
+function customNext(){
+  let n=$("archiveName").value.trim().replace(/\.tar(\.gz)?$/i,"");
+  if(!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(n)){
+    $("archiveErr").textContent="ArchiveName 格式錯誤。";return;
+  }
+  $("customDlg").close();
+  S.pending={d:A.UR,arg:n};
+  $("confirmTitle").textContent="確認執行自訂 Upload";
+  $("confirmText").textContent="請再次確認 ArchiveName。";
+  $("preview").textContent=`hicloud_latest_upload.sh run ${n}\nExpected archive: ${n}.tar`;
+  $("confirmDlg").showModal();
+}
+
+function lastRunText(){
+  const c=$("console").value;
+  if(S.lastRunStart<0)return "";
+  const end=S.lastRunEnd>=S.lastRunStart?S.lastRunEnd:c.length;
+  return c.slice(S.lastRunStart,end);
+}
+
+document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>choose(b.dataset.k));
+$("connectBtn").onclick=connect;
+$("disconnectBtn").onclick=disconnect;
+$("loginBtn").onclick=login;
+$("logoutBtn").onclick=logout;
+$("userpw").onkeydown=e=>{if(e.key==="Enter")login()};
+
+$("cancelConfirm").onclick=()=>{S.pending=null;$("confirmDlg").close()};
+$("runConfirm").onclick=()=>{
+  const p=S.pending;S.pending=null;$("confirmDlg").close();if(p)exec(p.d,p.arg);
+};
+$("cancelCustom").onclick=()=>$("customDlg").close();
+$("nextCustom").onclick=customNext;
+$("archiveName").onkeydown=e=>{if(e.key==="Enter")customNext()};
+
+$("clearBtn").onclick=()=>{
+  if(S.busy&&!confirm("目前作業執行中，仍要清除 Console 顯示？"))return;
+  $("console").value="";S.lastRunStart=-1;S.lastRunEnd=-1;$("last").textContent="Console cleared.";
+};
+$("copyBtn").onclick=async()=>{
+  try{await navigator.clipboard.writeText($("console").value);$("last").textContent=`Copied all — ${stamp()}`}
+  catch{uilog("Clipboard API unavailable.")}
+};
+$("copyLastBtn").onclick=async()=>{
+  const t=lastRunText();if(!t){uilog("目前沒有可複製的 Last Run。");return}
+  try{await navigator.clipboard.writeText(t);$("last").textContent=`Copied last run — ${stamp()}`}
+  catch{uilog("Clipboard API unavailable.")}
+};
+$("saveBtn").onclick=()=>{
+  const blob=new Blob([$("console").value],{type:"text/plain;charset=utf-8"});
+  const u=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=u;a.download=`hicloud-ui-${new Date().toISOString().replace(/[:.]/g,"-")}.log`;
+  a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
+};
+
+$("wsUrl").addEventListener("change",()=>saveEndpoint($("wsUrl").value.trim()));
+window.addEventListener("online",()=>{$("browserNet").textContent="Online";if(!S.connected&&!S.manual)connect()});
+window.addEventListener("offline",()=>{$("browserNet").textContent="Offline";conn("bad","Browser Offline")});
+window.addEventListener("beforeunload",e=>{if(S.busy){e.preventDefault();e.returnValue=""}});
+
+setInterval(()=>$("clock").textContent=stamp(),1000);
+$("clock").textContent=stamp();
+$("browserNet").textContent=navigator.onLine?"Online":"Offline";
+$("wsUrl").value=loadEndpoint();
+$("disconnectBtn").disabled=true;
+conn("bad","Disconnected");auth(false);opBadge();
+setPhase("IDLE","Waiting for operation.");updateWatchdog();updateVerifySummary();
+uilog(`HiCloud Operations UI v${UI_VERSION} initialized. Upload v${UPLOAD_VERSION}, Recovery v${RECOVERY_VERSION}.`);
+connect();
+</script>
+</body>
+</html>
