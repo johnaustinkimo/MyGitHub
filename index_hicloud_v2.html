@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>HiCloud Secure Backup Operations</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--line:#dce4ee;--text:#172033;--muted:#66758a;--blue:#1769e0;--green:#18794e;--amber:#a86600;--red:#b42318;--console:#0c1422;--shadow:0 12px 28px rgba(20,32,54,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI","Noto Sans TC",Arial,sans-serif}.app{max-width:1450px;margin:auto;padding:20px}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:18px}
+.brand{display:flex;gap:12px;align-items:center}.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#1769e0,#6f42c1);color:#fff;font-weight:800}.brand h1{font-size:20px;margin:0}.brand p{font-size:13px;color:var(--muted);margin:3px 0 0}
+.badges{display:flex;gap:8px;flex-wrap:wrap}.badge{border:1px solid var(--line);background:#f9fbfd;border-radius:999px;padding:7px 10px;font-size:13px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#9aa7b8;margin-right:6px}.ok{background:var(--green)}.warn{background:#d08700}.bad{background:var(--red)}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px}.card,.opcard,.consolewrap{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}.card{padding:17px;margin-bottom:18px}.card h2,.opcard h2{margin:0 0 6px;font-size:16px}.sub{margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.5}.field{margin:11px 0}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}.input{width:100%;padding:10px 11px;border:1px solid #cad5e3;border-radius:10px;outline:none}.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(23,105,224,.1)}
+.row{display:flex;gap:8px}.btn{border:1px solid transparent;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--blue);color:#fff}.secondary{background:#fff;border-color:#cad5e3;color:#34445b}.warnbtn{background:#fff5e6;border-color:#edce95;color:#875300}.ghost{background:#fff;border-color:var(--line);color:#43536a}
+.user{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:13px}.user small{color:var(--muted)}
+.hero{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:15px}.hero h2{margin:0;font-size:22px}.hero p{margin:5px 0;color:var(--muted);font-size:13px}.busy{display:none;border:1px solid #edce95;background:#fff8ea;color:#7b520d;border-radius:999px;padding:8px 11px;font-size:13px;font-weight:700}.busy.show{display:block}
+.ops{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.ophead{padding:17px;border-bottom:1px solid var(--line)}.ophead p{margin:4px 0 0;color:var(--muted);font-size:12px}.opbody{padding:17px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.act{border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px;text-align:left;cursor:pointer;min-height:76px}.act:hover:not(:disabled){border-color:#91b8ef;background:#f8fbff}.act:disabled{opacity:.45;cursor:not-allowed}.act strong{display:block;margin-bottom:4px}.act span{font-size:12px;color:var(--muted);line-height:1.35}.act.run{background:#fffaf1;border-color:#efd5a4}
+.consolehead{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800}.consoleactions{display:flex;gap:7px;flex-wrap:wrap}.console{width:100%;height:430px;resize:vertical;border:0;outline:0;padding:14px 15px;background:var(--console);color:#d8e2ef;font:13px/1.55 Consolas,"Cascadia Mono",monospace}.last{padding:8px 14px;background:#101b2c;color:#98abc2;font-size:12px;border-top:1px solid #1d2b40}
+dialog{border:0;border-radius:16px;padding:0;max-width:560px;width:calc(100% - 30px);box-shadow:0 26px 70px rgba(0,0,0,.24)}dialog::backdrop{background:rgba(18,30,48,.5)}.dbody{padding:21px}.dbody h3{margin:0 0 7px}.dbody p{font-size:13px;color:var(--muted);line-height:1.5}.preview{background:#f4f7fb;border:1px solid var(--line);border-radius:10px;padding:10px;font:12px Consolas,monospace;word-break:break-word}.dactions{display:flex;justify-content:flex-end;gap:8px;padding:14px 21px;border-top:1px solid var(--line);background:#fafbfd}
+@media(max-width:950px){.layout{grid-template-columns:1fr}.ops{grid-template-columns:1fr}}@media(max-width:620px){.app{padding:10px}.top{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.row{flex-direction:column}.console{height:350px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand"><div class="logo">HC</div><div><h1>HiCloud Secure Backup Operations</h1><p>加密分持資料上雲 / 雲端備份下載還原操作台</p></div></div>
+  <div class="badges"><span class="badge"><span id="connDot" class="dot bad"></span><span id="connText">Disconnected</span></span><span class="badge" id="clock">--</span></div>
+</header>
+
+<div class="layout">
+<aside>
+  <section class="card">
+    <h2>連線設定</h2><p class="sub">正式環境建議使用 HTTPS + WSS。斷線時自動嘗試重連。</p>
+    <div class="field"><label>WebSocket Endpoint</label><input id="wsUrl" class="input" spellcheck="false"></div>
+    <div class="row"><button id="connectBtn" class="btn primary">Connect</button><button id="disconnectBtn" class="btn secondary">Disconnect</button></div>
+  </section>
+
+  <section class="card">
+    <h2>使用者登入</h2><p class="sub">登入成功後才開放 HiCloud 作業。</p>
+    <div class="field"><label>帳號</label><input id="userid" class="input" autocomplete="username"></div>
+    <div class="field"><label>密碼</label><input id="userpw" class="input" type="password" autocomplete="current-password"></div>
+    <div class="row"><button id="loginBtn" class="btn primary">登入</button><button id="logoutBtn" class="btn secondary" disabled>登出</button></div>
+    <div class="user"><b id="who">尚未登入</b><br><small id="role">Role: -</small></div>
+  </section>
+
+  <section class="card"><h2>操作原則</h2><p class="sub" style="margin:0">查詢功能直接執行；Upload / Recovery Run 需要二次確認。作業進行中會鎖定其他按鈕，避免重複送出。</p></section>
+</aside>
+
+<main>
+  <div class="hero"><div><h2>雲端備份作業中心</h2><p>Upload v1.3.7 / Recovery v1.3.5</p></div><div id="busy" class="busy">作業執行中…</div></div>
+
+  <div class="ops">
+    <section class="opcard">
+      <div class="ophead"><h2>① HiCloud Upload</h2><p>hicloud_latest_upload_v1.3.7.sh</p></div>
+      <div class="opbody"><div class="grid">
+        <button class="act auth" data-k="UC" disabled><strong>Check Source</strong><span>NFS、來源穩定性、檔案清單與暫存空間。</span></button>
+        <button class="act auth" data-k="UL" disabled><strong>Cloud List</strong><span>列出目前 HiCloud 上的物件。</span></button>
+        <button class="act auth" data-k="US" disabled><strong>Upload Status</strong><span>查看 upload state marker。</span></button>
+        <button class="act run auth" data-k="UR" disabled><strong>Run Daily Upload</strong><span>使用當日 YYYYMMDD archive name。</span></button>
+        <button class="act run auth" data-k="UX" disabled style="grid-column:1/-1"><strong>Run Custom Upload</strong><span>手動指定 archive name，例如 testfile3-20260917。</span></button>
+      </div></div>
+    </section>
+
+    <section class="opcard">
+      <div class="ophead"><h2>② HiCloud Recovery</h2><p>hicloud_latest_recovery_v1.3.5.sh</p></div>
+      <div class="opbody"><div class="grid">
+        <button class="act auth" data-k="RL" disabled><strong>Cloud List</strong><span>列出可供還原的雲端備份。</span></button>
+        <button class="act auth" data-k="RX" disabled><strong>Latest Backup</strong><span>查詢目前最新 YYYYMMDD.tar。</span></button>
+        <button class="act auth" data-k="RS" disabled><strong>Recovery Status</strong><span>檢查 recovery marker 與本機檔案。</span></button>
+        <button class="act run auth" data-k="RR" disabled><strong>Run Latest Recovery</strong><span>下載並解密最新備份。</span></button>
+      </div></div>
+    </section>
+  </div>
+
+  <section class="consolewrap">
+    <div class="consolehead"><span>⌘ Operation Console</span><div class="consoleactions"><button id="copyBtn" class="btn ghost">Copy</button><button id="saveBtn" class="btn ghost">Download</button><button id="clearBtn" class="btn ghost">Clear</button></div></div>
+    <textarea id="console" class="console" readonly></textarea>
+    <div id="last" class="last">Ready.</div>
+  </section>
+</main>
+</div>
+</div>
+
+<dialog id="confirmDlg"><div class="dbody"><h3 id="confirmTitle">確認執行</h3><p id="confirmText"></p><div id="preview" class="preview"></div></div><div class="dactions"><button id="cancelConfirm" class="btn secondary">取消</button><button id="runConfirm" class="btn warnbtn">確認執行</button></div></dialog>
+<dialog id="customDlg"><div class="dbody"><h3>自訂 Upload Archive Name</h3><p>不含副檔名，只允許英數、點、底線與連字號。</p><div class="field"><input id="archiveName" class="input" placeholder="testfile3-20260917"></div><small id="archiveErr" style="color:var(--red)"></small></div><div class="dactions"><button id="cancelCustom" class="btn secondary">取消</button><button id="nextCustom" class="btn primary">下一步</button></div></dialog>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const S={ws:null,connected:false,auth:false,user:"",role:"",busy:false,manual:false,retry:0,timer:null,pending:null};
+const A={
+ UC:{d:"UPLOAD",a:"CHECK_SOURCE",label:"Upload / Check Source"},
+ UL:{d:"UPLOAD",a:"LIST",label:"Upload / Cloud List"},
+ US:{d:"UPLOAD",a:"STATUS",label:"Upload / Status"},
+ UR:{d:"UPLOAD",a:"RUN",label:"Upload / Run Daily",confirm:true},
+ RL:{d:"RECOVERY",a:"LIST",label:"Recovery / Cloud List"},
+ RX:{d:"RECOVERY",a:"LATEST",label:"Recovery / Latest"},
+ RS:{d:"RECOVERY",a:"STATUS",label:"Recovery / Status"},
+ RR:{d:"RECOVERY",a:"RUN",label:"Recovery / Run Latest",confirm:true}
+};
+function stamp(){return new Intl.DateTimeFormat("zh-TW",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date())}
+function defaultUrl(){const p=location.protocol==="https:"?"wss:":"ws:";return `${p}//${location.hostname||"192.168.167.68"}:1234/`}
+function log(x){const c=$("console");x=String(x??"").replace(/\r/g,"");c.value+=x+(x.endsWith("\n")?"":"\n");if(c.value.length>2000000)c.value="[UI] Output truncated.\n"+c.value.slice(-1500000);c.scrollTop=c.scrollHeight}
+function uilog(x){log(`[UI ${stamp()}] ${x}`)}
+function conn(kind,text){$("connText").textContent=text;$("connDot").className="dot "+kind}
+function update(){document.querySelectorAll(".auth").forEach(b=>b.disabled=!(S.connected&&S.auth)||S.busy);$("userid").disabled=S.auth||!S.connected;$("userpw").disabled=S.auth||!S.connected;$("loginBtn").disabled=S.auth||!S.connected;$("logoutBtn").disabled=!S.auth||!S.connected;$("busy").classList.toggle("show",S.busy)}
+function auth(ok,user="",role=""){S.auth=ok;S.user=ok?user:"";S.role=ok?role:"";$("who").textContent=ok?user:"尚未登入";$("role").textContent=`Role: ${ok?role:"-"}`;update()}
+function busy(v,label="作業執行中…"){S.busy=v;$("busy").textContent=label;update()}
+function b64(s){const bytes=new TextEncoder().encode(s);let x="";bytes.forEach(v=>x+=String.fromCharCode(v));return btoa(x)}
+function send(m){if(!S.ws||S.ws.readyState!==WebSocket.OPEN){uilog("WebSocket 尚未連線。");return false}S.ws.send(m);return true}
+function connect(){clearTimeout(S.timer);S.manual=false;const url=$("wsUrl").value.trim();if(!/^wss?:\/\/\S+$/i.test(url)){uilog("WebSocket URL 格式錯誤。");return}if(S.ws&&S.ws.readyState<2)return;conn("warn","Connecting");$("connectBtn").disabled=true;try{let w=new WebSocket(url);S.ws=w;w.onopen=()=>{S.connected=true;S.retry=0;conn("ok","Connected");$("connectBtn").disabled=true;$("disconnectBtn").disabled=false;auth(false);uilog(`Connected: ${url}`)};w.onmessage=async e=>handle(typeof e.data==="string"?e.data:await e.data.text());w.onerror=()=>conn("bad","Connection Error");w.onclose=()=>{S.connected=false;S.ws=null;conn("bad","Disconnected");$("connectBtn").disabled=false;$("disconnectBtn").disabled=true;auth(false);busy(false);uilog("WebSocket disconnected.");if(!S.manual){let d=Math.min(30000,2000*Math.pow(2,S.retry++));conn("warn",`Reconnect in ${Math.round(d/1000)}s`);S.timer=setTimeout(connect,d)}}}catch(e){uilog(e.message);$("connectBtn").disabled=false}}
+function disconnect(){S.manual=true;clearTimeout(S.timer);if(S.ws)S.ws.close(1000,"manual");else{S.connected=false;auth(false);conn("bad","Disconnected")}}
+function login(){let u=$("userid").value.trim(),p=$("userpw").value;if(!u||!p){uilog("請輸入帳號與密碼。");return}send(`@AUTH|LOGIN|${b64(u)}|${b64(p)}`);$("userpw").value=""}
+function logout(){send("@AUTH|LOGOUT");auth(false);uilog("Logged out.")}
+function handle(msg){for(const line of String(msg).replace(/\r/g,"").split("\n")){if(!line)continue;if(line.startsWith("@AUTH|OK|")){let r=line.split("|")[2]||"USER";auth(true,$("userid").value.trim(),r);uilog(`登入成功，Role=${r}`);continue}if(line.startsWith("@AUTH|ERR|")){auth(false);uilog("登入失敗："+line.slice(10));continue}if(line.startsWith("@BEGIN|")){let p=line.split("|");busy(true,p.slice(2).join("|"));$("last").textContent=`Running — ${stamp()}`;log("");log("================================================================");log(`[BEGIN ${stamp()}] ${p.slice(2).join("|")}`);continue}if(line.startsWith("@END|")){let p=line.split("|"),rc=Number(p[2]??1);log("================================================================");log(`[END ${stamp()}] rc=${rc}`);log("");busy(false);$("last").textContent=rc===0?`Completed successfully — ${stamp()}`:`Completed with error rc=${rc} — ${stamp()}`;continue}if(line.startsWith("@ERROR|")){log("[BACKEND ERROR] "+line.split("|").slice(2).join("|"));busy(false);continue}log(line)}}
+function exec(def,arg=""){if(!S.auth||S.busy)return;let id=`${Date.now()}-${Math.random().toString(16).slice(2,8)}`;send(`@ACTION|${id}|${def.d}|${def.a}|${arg?b64(arg):""}`)}
+function choose(k){if(k==="UX"){$("archiveName").value="";$("archiveErr").textContent="";$("customDlg").showModal();return}let d=A[k];if(!d)return;if(d.confirm){S.pending={d,arg:""};$("confirmTitle").textContent="確認執行長時間作業";$("confirmText").textContent=`即將執行：${d.label}`;$("preview").textContent=d.d==="UPLOAD"?"hicloud_latest_upload.sh run":"hicloud_latest_recovery.sh run";$("confirmDlg").showModal()}else exec(d)}
+function customNext(){let n=$("archiveName").value.trim().replace(/\.tar(\.gz)?$/i,"");if(!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(n)){$("archiveErr").textContent="ArchiveName 格式錯誤。";return}$("customDlg").close();S.pending={d:A.UR,arg:n};$("confirmTitle").textContent="確認執行自訂 Upload";$("confirmText").textContent="請再次確認 ArchiveName。";$("preview").textContent=`hicloud_latest_upload.sh run ${n}`;$("confirmDlg").showModal()}
+document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>choose(b.dataset.k));
+$("connectBtn").onclick=connect;$("disconnectBtn").onclick=disconnect;$("loginBtn").onclick=login;$("logoutBtn").onclick=logout;$("userpw").onkeydown=e=>{if(e.key==="Enter")login()};
+$("cancelConfirm").onclick=()=>{S.pending=null;$("confirmDlg").close()};$("runConfirm").onclick=()=>{let p=S.pending;S.pending=null;$("confirmDlg").close();if(p)exec(p.d,p.arg)};
+$("cancelCustom").onclick=()=>$("customDlg").close();$("nextCustom").onclick=customNext;$("archiveName").onkeydown=e=>{if(e.key==="Enter")customNext()};
+$("clearBtn").onclick=()=>{$("console").value="";$("last").textContent="Console cleared."};
+$("copyBtn").onclick=async()=>{try{await navigator.clipboard.writeText($("console").value);$("last").textContent=`Copied — ${stamp()}`}catch{uilog("Clipboard API unavailable.")}};
+$("saveBtn").onclick=()=>{let blob=new Blob([$("console").value],{type:"text/plain;charset=utf-8"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=`hicloud-ui-${new Date().toISOString().replace(/[:.]/g,"-")}.log`;a.click();URL.revokeObjectURL(u)};
+setInterval(()=>$("clock").textContent=stamp(),1000);$("clock").textContent=stamp();$("wsUrl").value=defaultUrl();$("disconnectBtn").disabled=true;conn("bad","Disconnected");auth(false);uilog("HiCloud Operations UI initialized.");connect();
+</script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta name="robots" content="noindex,nofollow">
+<title>HiCloud Operations Center v3</title>
+<style>
+:root{
+  --bg:#f3f6fb;--panel:#fff;--panel2:#f8fafc;--text:#172033;--muted:#66758a;
+  --line:#dfe6ef;--primary:#1769e0;--primary2:#0f55bd;--good:#16834a;--warn:#a86400;
+  --bad:#b83232;--console:#0b1422;--consoleText:#d9e4f0;--shadow:0 12px 30px rgba(23,32,51,.08);
+  --radius:16px
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,"Noto Sans TC","Segoe UI",Arial,sans-serif}
+button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.48}
+.app{max-width:1600px;margin:0 auto;padding:20px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:17px 20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:13px;min-width:0}
+.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1769e0,#7547d8);color:#fff;display:grid;place-items:center;font-weight:900}
+.brand h1{font-size:20px;margin:0 0 3px}.brand p{margin:0;color:var(--muted);font-size:12px}
+.meta{display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.badge{display:inline-flex;gap:7px;align-items:center;padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-size:12px;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:#98a6b8}.dot.good{background:var(--good);box-shadow:0 0 0 4px rgba(22,131,74,.12)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+.layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:18px}
+.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card{padding:17px;margin-bottom:18px}.card h2{font-size:15px;margin:0 0 5px}.sub{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 14px}
+.field{margin-bottom:12px}.field label{display:block;font-size:12px;font-weight:800;color:#43536a;margin-bottom:5px}
+.input{width:100%;border:1px solid #cfd9e6;border-radius:10px;padding:9px 10px;outline:none;background:#fff}.input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(23,105,224,.11)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.btn{border:1px solid transparent;border-radius:10px;padding:9px 11px;font-weight:750;display:inline-flex;justify-content:center;align-items:center;gap:6px;transition:.15s}
+.btn:hover:not(:disabled){transform:translateY(-1px)}.primary{background:var(--primary);color:#fff}.primary:hover:not(:disabled){background:var(--primary2)}
+.secondary{background:#fff;border-color:#cfd9e6;color:#314159}.warning{background:#fff7e9;border-color:#e8ca8d;color:#815100}.danger{background:#fff0f0;border-color:#e7bcbc;color:#9a2525}.ghost{background:transparent;border-color:var(--line);color:#506078}
+.userline{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}.who{min-width:0}.who strong{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.who span{font-size:11px;color:var(--muted)}
+.workspace{min-width:0}.hero{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:15px}.hero h2{margin:0;font-size:21px}.hero p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.action{overflow:hidden}.action-head{padding:16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}.action-head h3{font-size:17px;margin:0 0 4px}.action-head p{margin:0;color:var(--muted);font-size:12px}.action-body{padding:16px}
+.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.action-btn{text-align:left;border:1px solid var(--line);border-radius:11px;background:#fff;padding:12px;min-height:70px;transition:.15s}.action-btn:hover:not(:disabled){border-color:#9ab9eb;background:#f8fbff;transform:translateY(-1px)}.action-btn strong{display:block;font-size:13px;margin-bottom:3px}.action-btn span{font-size:11px;color:var(--muted);line-height:1.4}.action-btn.run{background:#fffaf0;border-color:#eed69e}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--line)}.section-head h3{font-size:14px;margin:0}.section-actions{display:flex;gap:7px;flex-wrap:wrap}
+.jobs{overflow:hidden;margin-bottom:16px}.table-wrap{overflow:auto;max-height:310px}.job-table{width:100%;border-collapse:collapse;font-size:12px}.job-table th,.job-table td{padding:9px 10px;border-bottom:1px solid #edf1f6;text-align:left;white-space:nowrap}.job-table th{position:sticky;top:0;background:#f8fafc;color:#526176;font-size:11px;z-index:1}.job-row{cursor:pointer}.job-row:hover{background:#f7faff}.job-row.selected{background:#edf5ff}.state{font-weight:800}.state.SUCCESS{color:var(--good)}.state.RUNNING,.state.PENDING{color:var(--primary)}.state.FAILED,.state.INTERRUPTED{color:var(--bad)}.state.CANCELLED{color:var(--warn)}
+.console-panel{overflow:hidden}.console{width:100%;height:410px;resize:vertical;margin:0;border:0;outline:0;padding:14px 15px;background:var(--console);color:var(--consoleText);font:12.5px/1.55 "Cascadia Mono",Consolas,monospace}.last{padding:8px 14px;border-top:1px solid #1d2a3c;background:#101b2c;color:#97a9c0;font-size:11px}
+.empty{padding:25px;text-align:center;color:var(--muted);font-size:12px}
+dialog{border:0;border-radius:15px;padding:0;max-width:560px;width:calc(100% - 28px);box-shadow:0 26px 80px rgba(10,20,35,.28)}dialog::backdrop{background:rgba(15,27,44,.5);backdrop-filter:blur(2px)}.dialog-body{padding:20px}.dialog-body h3{margin:0 0 7px}.dialog-body p{color:var(--muted);font-size:12px;line-height:1.55}.preview{background:#f4f7fb;border:1px solid var(--line);border-radius:10px;padding:10px;font:12px Consolas,monospace;word-break:break-word}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding:13px 20px;border-top:1px solid var(--line);background:#fafbfd}.warnbox{margin-top:12px;border:1px solid #efd397;background:#fff9ed;color:#76510f;border-radius:10px;padding:10px;font-size:12px;line-height:1.5}
+@media(max-width:1050px){.layout{grid-template-columns:1fr}.action-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.app{padding:9px}.topbar{align-items:flex-start;flex-direction:column}.meta{justify-content:flex-start}.quick{grid-template-columns:1fr}.row{flex-direction:column}.console{height:350px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="logo">HC</div><div><h1>HiCloud Operations Center v3</h1><p>Detached job architecture — browser disconnect does not terminate Upload / Recovery</p></div></div>
+  <div class="meta">
+    <span class="badge"><span id="connDot" class="dot bad"></span><span id="connText">Disconnected</span></span>
+    <span class="badge">Jobs: <b id="runningCount">0 running</b></span>
+    <span class="badge" id="clock">--</span>
+  </div>
+</header>
+
+<div class="layout">
+<aside>
+  <section class="card">
+    <h2>WebSocket</h2><p class="sub">正式環境建議 HTTPS + WSS。斷線後會自動重連，但需重新登入。</p>
+    <div class="field"><label>Endpoint</label><input id="wsUrl" class="input" spellcheck="false"></div>
+    <div class="row"><button id="connectBtn" class="btn primary">Connect</button><button id="disconnectBtn" class="btn secondary">Disconnect</button></div>
+  </section>
+  <section class="card">
+    <h2>登入</h2><p class="sub">Backend session 驗證成功後才開放操作。</p>
+    <div class="field"><label>帳號</label><input id="userid" class="input" autocomplete="username"></div>
+    <div class="field"><label>密碼</label><input id="userpw" class="input" type="password" autocomplete="current-password"></div>
+    <div class="row"><button id="loginBtn" class="btn primary">登入</button><button id="logoutBtn" class="btn secondary">登出</button></div>
+    <div class="userline"><div class="who"><strong id="userDisplay">尚未登入</strong><span id="roleDisplay">Role: -</span></div><span id="authBadge" class="badge"><span class="dot"></span>Guest</span></div>
+  </section>
+  <section class="card">
+    <h2>v3 作業模式</h2>
+    <p class="sub" style="margin:0">Run 作業會建立持久 Job ID，由 systemd-run（優先）或 setsid 在伺服器端獨立執行。瀏覽器重新連線後可從 Job Center 重新查看狀態與日誌。</p>
+  </section>
+</aside>
+
+<main class="workspace">
+  <div class="hero"><div><h2>雲端備份作業中心</h2><p>Upload v1.3.7 · Recovery v1.3.5 · Job Controller v1.0.0</p></div></div>
+
+  <div class="action-grid">
+    <section class="panel action">
+      <div class="action-head"><div><h3>① HiCloud Upload</h3><p>來源檢查、雲端清單、狀態與 detached upload</p></div><div>☁️↑</div></div>
+      <div class="action-body"><div class="quick">
+        <button class="action-btn auth-action" data-read="UPLOAD:CHECK_SOURCE"><strong>Check Source</strong><span>NFS、source stability、檔案清單及暫存空間。</span></button>
+        <button class="action-btn auth-action" data-read="UPLOAD:LIST"><strong>Cloud List</strong><span>列出 HiCloud object。</span></button>
+        <button class="action-btn auth-action" data-read="UPLOAD:STATUS"><strong>Upload Status</strong><span>查看 upload marker。</span></button>
+        <button class="action-btn run auth-action" data-job="UPLOAD:RUN"><strong>Run Daily Upload</strong><span>建立 detached daily upload job。</span></button>
+        <button class="action-btn run auth-action" id="customUploadBtn" style="grid-column:1/-1"><strong>Run Custom Upload</strong><span>指定 archive name，建立 detached job。</span></button>
+      </div></div>
+    </section>
+
+    <section class="panel action">
+      <div class="action-head"><div><h3>② HiCloud Recovery</h3><p>雲端清單、latest、狀態與 detached recovery</p></div><div>☁️↓</div></div>
+      <div class="action-body"><div class="quick">
+        <button class="action-btn auth-action" data-read="RECOVERY:LIST"><strong>Cloud List</strong><span>列出可還原備份。</span></button>
+        <button class="action-btn auth-action" data-read="RECOVERY:LATEST"><strong>Latest Backup</strong><span>查詢最新 YYYYMMDD.tar。</span></button>
+        <button class="action-btn auth-action" data-read="RECOVERY:STATUS"><strong>Recovery Status</strong><span>檢查 recovery marker。</span></button>
+        <button class="action-btn run auth-action" data-job="RECOVERY:RUN"><strong>Run Latest Recovery</strong><span>建立 detached recovery job。</span></button>
+      </div></div>
+    </section>
+  </div>
+
+  <section class="panel jobs">
+    <div class="section-head"><h3>Job Center</h3><div class="section-actions">
+      <button id="refreshJobsBtn" class="btn ghost">Refresh</button>
+      <button id="tailJobBtn" class="btn ghost">View Log</button>
+      <button id="cancelJobBtn" class="btn danger">Cancel Job</button>
+    </div></div>
+    <div class="table-wrap">
+      <table class="job-table"><thead><tr><th>Job ID</th><th>State</th><th>Domain</th><th>Argument</th><th>User</th><th>Started</th><th>Ended</th><th>RC</th><th>Launcher</th></tr></thead><tbody id="jobBody"></tbody></table>
+      <div id="jobEmpty" class="empty">登入後按 Refresh 查看 Job history。</div>
+    </div>
+  </section>
+
+  <section class="panel console-panel">
+    <div class="section-head"><h3 id="consoleTitle">Operation Console</h3><div class="section-actions">
+      <button id="copyBtn" class="btn ghost">Copy</button><button id="downloadBtn" class="btn ghost">Download</button><button id="clearBtn" class="btn ghost">Clear</button>
+    </div></div>
+    <textarea id="console" class="console" readonly spellcheck="false"></textarea>
+    <div id="lastStatus" class="last">Ready.</div>
+  </section>
+</main>
+</div>
+</div>
+
+<dialog id="confirmDialog"><div class="dialog-body"><h3 id="confirmTitle">確認執行</h3><p id="confirmText"></p><div id="confirmPreview" class="preview"></div><div class="warnbox">Run 會建立伺服器端 detached job。即使瀏覽器關閉，job 仍會繼續；請避免重複建立相同作業。</div></div><div class="dialog-actions"><button id="confirmCancel" class="btn secondary">取消</button><button id="confirmRun" class="btn warning">建立 Job</button></div></dialog>
+<dialog id="customDialog"><div class="dialog-body"><h3>自訂 Upload Archive</h3><p>不含副檔名；只允許英數、點、底線、連字號。</p><div class="field"><label>Archive Name</label><input id="archiveName" class="input" placeholder="testfile4-20260917" maxlength="128"></div><div id="archiveError" style="font-size:12px;color:var(--bad)"></div></div><div class="dialog-actions"><button id="customCancel" class="btn secondary">取消</button><button id="customNext" class="btn primary">下一步</button></div></dialog>
+<dialog id="cancelDialog"><div class="dialog-body"><h3>確認取消 Job</h3><p>將送出 TERM 給選取的執行中作業。</p><div id="cancelPreview" class="preview"></div><div class="warnbox">取消操作可能留下 partial/download/temp 檔案；後端 script 下次執行會依既有保護邏輯處理。</div></div><div class="dialog-actions"><button id="cancelNo" class="btn secondary">返回</button><button id="cancelYes" class="btn danger">確認取消</button></div></dialog>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const S={ws:null,connected:false,auth:false,user:"",role:"",manual:false,retry:0,timer:null,pending:null,selectedJob:"",jobs:new Map(),poll:null,logJob:""};
+const readActions=new Set(["UPLOAD:CHECK_SOURCE","UPLOAD:LIST","UPLOAD:STATUS","RECOVERY:LIST","RECOVERY:LATEST","RECOVERY:STATUS"]);
+
+function dt(){return new Intl.DateTimeFormat("zh-TW",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date())}
+function defaultUrl(){const s=location.protocol==="https:"?"wss:":"ws:";return `${s}//${location.hostname||"192.168.167.68"}:1234/`}
+function b64e(v){const a=new TextEncoder().encode(v);let s="";a.forEach(x=>s+=String.fromCharCode(x));return btoa(s)}
+function b64d(v){try{const s=atob(v),a=Uint8Array.from(s,c=>c.charCodeAt(0));return new TextDecoder().decode(a)}catch{return "[decode error]"}}
+function req(){return `${Date.now()}-${Math.random().toString(16).slice(2,8)}`}
+function log(x){const c=$("console"),t=String(x??"").replace(/\r/g,"");c.value+=t+(t.endsWith("\n")?"":"\n");if(c.value.length>2e6)c.value="[UI] output truncated\n"+c.value.slice(-1500000);c.scrollTop=c.scrollHeight}
+function uilog(x){log(`[UI ${dt()}] ${x}`)}
+function send(x){if(!S.ws||S.ws.readyState!==WebSocket.OPEN){uilog("WebSocket not connected.");return false}S.ws.send(x);return true}
+function conn(kind,text){$("connText").textContent=text;$("connDot").className=`dot ${kind}`}
+function auth(ok,user="",role=""){S.auth=ok;S.user=ok?user:"";S.role=ok?role:"";$("userDisplay").textContent=ok?user:"尚未登入";$("roleDisplay").textContent=`Role: ${ok?role:"-"}`;$("authBadge").innerHTML=ok?'<span class="dot good"></span>Authenticated':'<span class="dot"></span>Guest';$("userid").disabled=ok||!S.connected;$("userpw").disabled=ok||!S.connected;$("loginBtn").disabled=ok||!S.connected;$("logoutBtn").disabled=!ok||!S.connected;document.querySelectorAll(".auth-action").forEach(b=>b.disabled=!ok);$("refreshJobsBtn").disabled=!ok;$("tailJobBtn").disabled=!ok||!S.selectedJob;$("cancelJobBtn").disabled=!ok||!canCancelSelected();if(ok){refreshJobs();startPolling()}else{stopPolling();S.jobs.clear();renderJobs()}}
+function canCancelSelected(){const j=S.jobs.get(S.selectedJob);return !!j&&["RUNNING","PENDING"].includes(j.state)}
+function connect(){clearTimeout(S.timer);S.manual=false;const url=$("wsUrl").value.trim();if(!/^wss?:\/\/[^ ]+$/i.test(url)){uilog("Invalid WebSocket URL.");return}if(S.ws&&[0,1].includes(S.ws.readyState))return;conn("warn","Connecting");$("connectBtn").disabled=true;try{const w=new WebSocket(url);S.ws=w;w.onopen=()=>{S.connected=true;S.retry=0;conn("good","Connected");$("connectBtn").disabled=true;$("disconnectBtn").disabled=false;auth(false);uilog(`Connected: ${url}`)};w.onmessage=async e=>handle(typeof e.data==="string"?e.data:e.data instanceof Blob?await e.data.text():"");w.onerror=()=>conn("bad","Error");w.onclose=()=>{S.connected=false;S.ws=null;conn("bad","Disconnected");$("connectBtn").disabled=false;$("disconnectBtn").disabled=true;auth(false);uilog("Disconnected.");if(!S.manual)reconnect()}}catch(e){conn("bad","Error");$("connectBtn").disabled=false;reconnect()}}
+function reconnect(){clearTimeout(S.timer);const d=Math.min(30000,2000*Math.pow(2,S.retry++));conn("warn",`Reconnect ${Math.round(d/1000)}s`);S.timer=setTimeout(connect,d)}
+function disconnect(){S.manual=true;clearTimeout(S.timer);if(S.ws)S.ws.close(1000,"manual");else{S.connected=false;auth(false);conn("bad","Disconnected")}}
+function login(){const u=$("userid").value.trim(),p=$("userpw").value;if(!u||!p){uilog("請輸入帳號與密碼。");return}$("loginBtn").disabled=true;send(`@AUTH|LOGIN|${b64e(u)}|${b64e(p)}`);$("userpw").value=""}
+function logout(){send("@AUTH|LOGOUT");auth(false);uilog("Logged out.")}
+function runRead(key){if(!readActions.has(key)||!S.auth)return;const [d,a]=key.split(":");const r=req();$("consoleTitle").textContent=`Operation Console — ${d} / ${a}`;send(`@ACTION|${r}|${d}|${a}`)}
+function prepareJob(domain,arg=""){S.pending={domain,action:"RUN",arg};$("confirmTitle").textContent=`確認建立 ${domain} Job`;$("confirmText").textContent=domain==="UPLOAD"?"將建立 detached upload job。":"將建立 detached latest recovery job。";$("confirmPreview").textContent=domain==="UPLOAD"?`hicloud_latest_upload.sh run${arg?" "+arg:""}`:"hicloud_latest_recovery.sh run";$("confirmDialog").showModal()}
+function startJob(){const p=S.pending;S.pending=null;$("confirmDialog").close();if(!p)return;const r=req(),arg=p.arg?b64e(p.arg):"";send(`@JOB|START|${r}|${p.domain}|${p.action}|${arg}`)}
+function customNext(){let a=$("archiveName").value.trim().replace(/\.tar(\.gz)?$/i,"");if(!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(a)){$("archiveError").textContent="格式錯誤。";return}$("customDialog").close();prepareJob("UPLOAD",a)}
+function refreshJobs(){if(S.auth)send("@JOB|LIST")}
+function startPolling(){stopPolling();S.poll=setInterval(()=>{if(S.auth){refreshJobs();if(S.selectedJob){send(`@JOB|STATUS|${S.selectedJob}`);if(canCancelSelected()||S.logJob===S.selectedJob)send(`@JOB|TAIL|${S.selectedJob}|120`)}}},5000)}
+function stopPolling(){if(S.poll){clearInterval(S.poll);S.poll=null}}
+function parseJob(parts){return{id:parts[0],state:parts[1],domain:parts[2],action:parts[3],arg:parts[4],user:parts[5],role:parts[6],created:parts[7],started:parts[8],ended:parts[9],rc:parts[10],launcher:parts[11]}}
+function renderJobs(){const b=$("jobBody");b.textContent="";const arr=[...S.jobs.values()].sort((a,b)=>b.id.localeCompare(a.id));$("jobEmpty").style.display=arr.length?"none":"block";let running=0;for(const j of arr){if(["RUNNING","PENDING"].includes(j.state))running++;const tr=document.createElement("tr");tr.className="job-row"+(j.id===S.selectedJob?" selected":"");tr.dataset.id=j.id;const vals=[j.id,j.state,j.domain,j.arg==="-"?"":j.arg,j.user,j.started==="-"?"":j.started,j.ended==="-"?"":j.ended,j.rc,j.launcher];vals.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;if(i===1)td.className=`state ${j.state}`;tr.appendChild(td)});tr.onclick=()=>{S.selectedJob=j.id;$("tailJobBtn").disabled=false;$("cancelJobBtn").disabled=!canCancelSelected();renderJobs()};b.appendChild(tr)}$("runningCount").textContent=`${running} running`;if(S.selectedJob&&!S.jobs.has(S.selectedJob))S.selectedJob=""}
+function showTail(){if(!S.selectedJob)return;S.logJob=S.selectedJob;$("console").value="";$("consoleTitle").textContent=`Job Log — ${S.selectedJob}`;send(`@JOB|TAIL|${S.selectedJob}|200`)}
+function cancelSelected(){if(!canCancelSelected())return;$("cancelPreview").textContent=S.selectedJob;$("cancelDialog").showModal()}
+function doCancel(){const id=S.selectedJob;$("cancelDialog").close();if(id)send(`@JOB|CANCEL|${id}`)}
+function handle(payload){for(const line of String(payload).replace(/\r/g,"").split("\n")){if(!line)continue;
+ if(line.startsWith("@AUTH|OK|")){const r=line.split("|")[2]||"USER";if(r==="LOGOUT"){auth(false);continue}auth(true,$("userid").value.trim(),r);uilog(`Login success. Role=${r}`);continue}
+ if(line.startsWith("@AUTH|ERR|")){auth(false);uilog(`Login failed: ${line.slice(10)}`);continue}
+ if(line.startsWith("@BEGIN|")){const p=line.split("|");log(`\n===== ${p.slice(2).join("|")} / ${dt()} =====`);$("lastStatus").textContent="Read-only operation running...";continue}
+ if(line.startsWith("@END|")){const p=line.split("|"),rc=p[2]||"?";log(`===== END rc=${rc} / ${dt()} =====\n`);$("lastStatus").textContent=`Completed rc=${rc}`;continue}
+ if(line.startsWith("@JOB|STARTED|")){const p=line.split("|"),id=p[3];uilog(`Detached job created: ${id} (${p[4]}/${p[5]}, ${p[6]})`);S.selectedJob=id;S.logJob=id;refreshJobs();setTimeout(showTail,800);continue}
+ if(line==="@JOBLIST|BEGIN"){S._next=new Map();continue}
+ if(line.startsWith("@JOBITEM|")){const j=parseJob(line.split("|").slice(1));(S._next||S.jobs).set(j.id,j);continue}
+ if(line.startsWith("@JOBLIST|END|")){if(S._next){S.jobs=S._next;S._next=null}renderJobs();continue}
+ if(line.startsWith("@JOBSTATUS|")){const j=parseJob(line.split("|").slice(1));S.jobs.set(j.id,j);renderJobs();continue}
+ if(line.startsWith("@JOBLOG|BEGIN|")){const id=line.split("|")[3];if(id===S.logJob){$("console").value="";$("consoleTitle").textContent=`Job Log — ${id}`};continue}
+ if(line.startsWith("@JOBLOG|LINE|")){const p=line.split("|"),id=p[3],enc=p.slice(4).join("|");if(id===S.logJob)log(b64d(enc));continue}
+ if(line.startsWith("@JOBLOG|END|")){const id=line.split("|")[3];if(id===S.logJob)$("lastStatus").textContent=`Job log refreshed — ${dt()}`;continue}
+ if(line.startsWith("@JOB|CANCEL_REQUESTED|")){uilog(`Cancel requested: ${line.split("|")[3]}`);refreshJobs();continue}
+ if(line.startsWith("@ERROR|")){uilog(`Backend: ${line.split("|").slice(2).join("|")}`);continue}
+ log(line)
+}}
+async function copyLog(){try{await navigator.clipboard.writeText($("console").value);$("lastStatus").textContent="Copied."}catch{uilog("Clipboard unavailable.")}}
+function downloadLog(){const b=new Blob([$("console").value],{type:"text/plain;charset=utf-8"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=`hicloud-${S.logJob||"console"}-${new Date().toISOString().replace(/[:.]/g,"-")}.log`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u)}
+
+document.querySelectorAll("[data-read]").forEach(b=>b.onclick=()=>runRead(b.dataset.read));
+document.querySelectorAll("[data-job]").forEach(b=>b.onclick=()=>prepareJob(b.dataset.job.split(":")[0]));
+$("customUploadBtn").onclick=()=>{$("archiveName").value="";$("archiveError").textContent="";$("customDialog").showModal();setTimeout(()=>$("archiveName").focus(),30)};
+$("connectBtn").onclick=connect;$("disconnectBtn").onclick=disconnect;$("loginBtn").onclick=login;$("logoutBtn").onclick=logout;$("userpw").onkeydown=e=>{if(e.key==="Enter")login()};
+$("refreshJobsBtn").onclick=refreshJobs;$("tailJobBtn").onclick=showTail;$("cancelJobBtn").onclick=cancelSelected;
+$("confirmCancel").onclick=()=>{S.pending=null;$("confirmDialog").close()};$("confirmRun").onclick=startJob;
+$("customCancel").onclick=()=>$("customDialog").close();$("customNext").onclick=customNext;$("archiveName").onkeydown=e=>{if(e.key==="Enter")customNext()};
+$("cancelNo").onclick=()=>$("cancelDialog").close();$("cancelYes").onclick=doCancel;
+$("clearBtn").onclick=()=>{$("console").value="";$("lastStatus").textContent="Cleared."};$("copyBtn").onclick=copyLog;$("downloadBtn").onclick=downloadLog;
+setInterval(()=>$("clock").textContent=dt(),1000);$("clock").textContent=dt();$("wsUrl").value=defaultUrl();$("disconnectBtn").disabled=true;auth(false);conn("bad","Disconnected");uilog("HiCloud Operations Center v3 initialized.");connect();
+</script>
+</body>
+</html>

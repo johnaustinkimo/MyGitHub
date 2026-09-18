@@ -1,0 +1,15 @@
+# /etc/hicloud-jobctl.conf
+# HiCloud detached web job controller configuration
+
+UPLOAD_SCRIPT="/ws/hicloud_latest_upload.sh"
+RECOVERY_SCRIPT="/ws/hicloud_latest_recovery.sh"
+
+JOB_STATE_DIR="/var/lib/hicloud-web-jobs"
+JOB_LOG_DIR="/var/log/hicloud-web-jobs"
+
+# yes = prefer systemd-run transient services
+# fallback is nohup + setsid when unavailable.
+USE_SYSTEMD_RUN=yes
+
+# Completed/failed/cancelled/interrupted job history retention.
+JOB_RETENTION_DAYS=30
