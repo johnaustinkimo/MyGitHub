@@ -4,6 +4,14 @@
 set -uo pipefail
 umask 077
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOME=/root
+USER=root
+LOGNAME=root
+SHELL=/bin/bash
+
+export PATH HOME USER LOGNAME SHELL
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 LOGGP_HELPER="${LOGGP_HELPER:-${SCRIPT_DIR}/logGP_it.sh}"
 UPLOAD_SCRIPT="${UPLOAD_SCRIPT:-${SCRIPT_DIR}/hicloud_latest_upload.sh}"

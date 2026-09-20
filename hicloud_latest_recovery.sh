@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # HiCloud Secure Storage Latest Recovery
-# Version: 1.3.5
+# Version: 1.3.8
 #
 # Adds selectable post-recovery restore verification:
 #   POST_VERIFY_MODE=smallest|random|all
@@ -12,11 +12,14 @@
 #   -> large-file progress/timeout + all-mode checkpoint/resume
 #   -> adaptive sub-second polling + millisecond elapsed/throughput
 #   -> configurable inner original-file logging (names or tar -tvf style)
+# v1.3.7 adds safe custom recovery and generic *.tar cloud listing/latest selection.
+# v1.3.8 changes only latest selection: for the newest date_key, prefer canonical YYYYMMDD.tar;
+#        if canonical is absent, fall back deterministically to a prefixed archive for that date.
 #
 
 set -uo pipefail
 
-VERSION="1.3.5"
+VERSION="1.3.8"
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export PATH
@@ -88,6 +91,7 @@ die()
 : "${POST_VERIFY_LOG_INNER_FILES:=yes}"
 : "${POST_VERIFY_LOG_INNER_FILES_FORMAT:=verbose}"   # names|verbose
 : "${POST_VERIFY_LOG_INNER_FILES_MAX:=100}"
+: "${POST_VERIFY_ALLOW_NESTED_SIGNED_MEMBERS:=yes}"
 
 bool_yes()
 {
@@ -111,7 +115,7 @@ normalize_fpr()
     printf '%s' "$1" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]'
 }
 
-for bool_var in POST_VERIFY POST_VERIFY_ALL_STOP_ON_FAILURE KEEP_VERIFY_WORK_ON_FAILURE POST_VERIFY_EXTRACT_INNER POST_VERIFY_REQUIRE_REGULAR_FILE POST_VERIFY_REQUIRE_NONEMPTY KEEP_VERIFY_RESTORE_OUTPUT POST_VERIFY_CHECKPOINT POST_VERIFY_ADAPTIVE_POLL POST_VERIFY_LOG_INNER_FILES VERIFY_TAR CALCULATE_SHA256; do
+for bool_var in POST_VERIFY POST_VERIFY_ALL_STOP_ON_FAILURE KEEP_VERIFY_WORK_ON_FAILURE POST_VERIFY_EXTRACT_INNER POST_VERIFY_REQUIRE_REGULAR_FILE POST_VERIFY_REQUIRE_NONEMPTY KEEP_VERIFY_RESTORE_OUTPUT POST_VERIFY_CHECKPOINT POST_VERIFY_ADAPTIVE_POLL POST_VERIFY_LOG_INNER_FILES POST_VERIFY_ALLOW_NESTED_SIGNED_MEMBERS VERIFY_TAR CALCULATE_SHA256; do
     bool_value="${!bool_var}"
     bool_normalized="$(normalize_bool "$bool_value")" || die "invalid boolean setting: ${bool_var}=${bool_value}"
     printf -v "$bool_var" '%s' "$bool_normalized"
@@ -330,30 +334,115 @@ fetch_cloud_list()
     return 1
 }
 
+valid_archive_basename()
+{
+    [[ "${1:-}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]
+}
+
+valid_cloud_archive()
+{
+    local archive="${1:-}" base
+    [[ "$archive" == *.tar ]] || return 1
+    base="${archive%.tar}"
+    valid_archive_basename "$base"
+}
+
+normalize_requested_archive()
+{
+    local input="${1:-}" base
+
+    [[ -n "$input" ]] || return 1
+    [[ "$input" != */* && "$input" != *\\* ]] || return 1
+
+    base="${input%.tar}"
+    valid_archive_basename "$base" || return 1
+    printf '%s.tar\n' "$base"
+}
+
 parse_cloud_files()
 {
+    # Accept all safe tar object names, not only YYYYMMDD.tar.
+    # Examples:
+    #   20260918.tar
+    #   testfile-20260918.tar
+    #   TargetPath_test_20260918.tar
     FILES="$(
         printf '%s\n' "$LIST_OUTPUT" |
-        sed -nE 's/.*file:[[:space:]]*([0-9]{8}\.tar)([[:space:]].*)?$/\1/p' |
+        sed -nE 's/.*file:[[:space:]]*([A-Za-z0-9][A-Za-z0-9._-]{0,127}\.tar)([[:space:]].*)?$/\1/p' |
         LC_ALL=C sort -u
     )"
 
     [[ -n "$FILES" ]] || {
-        log ERROR "no YYYYMMDD.tar files found in cloud list"
+        log ERROR "no safe *.tar files found in cloud list"
         return 1
     }
     return 0
 }
 
+archive_date_key()
+{
+    local archive="${1:-}" base token normalized latest=""
+
+    valid_cloud_archive "$archive" || return 1
+    base="${archive%.tar}"
+
+    # Use the last standalone/embedded 8-digit token that is a valid calendar
+    # date. This allows prefixes such as testfile-20260918.tar while keeping
+    # latest selection deterministic without trusting cloud list ordering.
+    while IFS= read -r token; do
+        [[ "$token" =~ ^[0-9]{8}$ ]] || continue
+        normalized="$(date -d "${token:0:4}-${token:4:2}-${token:6:2}" '+%Y%m%d' 2>/dev/null || true)"
+        [[ "$normalized" == "$token" ]] || continue
+        latest="$token"
+    done < <(printf '%s\n' "$base" | grep -oE '[0-9]{8}' || true)
+
+    [[ -n "$latest" ]] || return 1
+    printf '%s\n' "$latest"
+}
+
 select_latest_file()
 {
-    LATEST_FILE="$(printf '%s\n' "$FILES" | LC_ALL=C sort -r | head -n 1)"
-    [[ "$LATEST_FILE" =~ ^[0-9]{8}\.tar$ ]] || {
-        log ERROR "cannot determine latest archive"
+    local archive key best_key="" best_archive="" canonical_archive=""
+
+    # Pass 1: determine the newest valid YYYYMMDD date_key.
+    # For equal date_key values, retain the lexically greatest archive as the
+    # deterministic fallback if the canonical YYYYMMDD.tar object is absent.
+    while IFS= read -r archive; do
+        [[ -n "$archive" ]] || continue
+        key="$(archive_date_key "$archive" 2>/dev/null || true)"
+        [[ -n "$key" ]] || continue
+
+        if [[ -z "$best_key" || "$key" > "$best_key" ]]; then
+            best_key="$key"
+            best_archive="$archive"
+        elif [[ "$key" == "$best_key" && "$archive" > "$best_archive" ]]; then
+            best_archive="$archive"
+        fi
+    done <<< "$FILES"
+
+    [[ -n "$best_archive" ]] || {
+        log ERROR "cannot determine latest archive: no safe *.tar object contains a valid YYYYMMDD date token"
         return 1
     }
-    log INFO "latest cloud archive: $LATEST_FILE"
+
+    # v1.3.8 policy: if the newest date has its canonical daily archive,
+    # always prefer it over test/prefixed archives carrying the same date.
+    canonical_archive="${best_key}.tar"
+    if cloud_file_exists "$canonical_archive"; then
+        LATEST_FILE="$canonical_archive"
+        log INFO "latest cloud archive: $LATEST_FILE date_key=$best_key selection=canonical"
+    else
+        LATEST_FILE="$best_archive"
+        log INFO "latest cloud archive: $LATEST_FILE date_key=$best_key selection=fallback"
+    fi
+
     return 0
+}
+
+cloud_file_exists()
+{
+    local archive="$1"
+    printf '%s\n' "$FILES" | grep -Fxq -- "$archive"
 }
 
 read_marker_value()
@@ -444,7 +533,7 @@ post_verify_marker_valid()
     case "$mode" in
         smallest|random)
             (( total == 1 )) || return 1
-            [[ "$member" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*\.o3\.signed$ ]] || return 1
+            is_safe_signed_member_path "$member" || return 1
             [[ "$member_size" =~ ^[0-9]+$ ]] || return 1
             (( member_size > 0 )) || return 1
             ;;
@@ -576,17 +665,68 @@ verify_tar()
 SAMPLE_MEMBER=""
 SAMPLE_MEMBER_SIZE=""
 
+
+is_safe_signed_member_path()
+{
+    local member="${1:-}"
+    local component
+    local -a components
+
+    [[ -n "$member" ]] || return 1
+    [[ "$member" == *.o3.signed ]] || return 1
+    [[ "$member" != /* ]] || return 1
+    [[ "$member" != *\\* ]] || return 1
+    [[ "$member" != *$'\n'* ]] || return 1
+    [[ "$member" != *$'\r'* ]] || return 1
+    [[ "$member" != *$'\t'* ]] || return 1
+
+    if ! bool_yes "$POST_VERIFY_ALLOW_NESTED_SIGNED_MEMBERS"; then
+        [[ "$member" != */* ]] || return 1
+    fi
+
+    IFS='/' read -r -a components <<< "$member"
+    (( ${#components[@]} > 0 )) || return 1
+
+    for component in "${components[@]}"; do
+        [[ -n "$component" ]] || return 1
+        [[ "$component" != "." && "$component" != ".." ]] || return 1
+        [[ "$component" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || return 1
+    done
+
+    return 0
+}
+
 list_safe_signed_members()
 {
     local archive="$1"
+    local listing_file line mode size member
 
-    # Observed GNU tar listing:
-    # mode owner/group size YYYY-MM-DD HH:MM filename
-    # Only simple basename regular files ending in .o3.signed are accepted.
-    LC_ALL=C tar -tvf "$archive" 2>>"$RUN_LOG" |
-        awk '$1 ~ /^-/ && $3 ~ /^[0-9]+$/ && NF >= 6 {print $3 "\t" $6}' |
-        awk -F '\t' '$1 ~ /^[0-9]+$/ && $1 > 0 && $2 ~ /^[A-Za-z0-9][A-Za-z0-9._-]*\.o3\.signed$/ {print}' |
+    listing_file="$(mktemp "${VERIFY_WORK_ROOT%/}/outer-list.XXXXXX")" || return 1
+    chmod 600 "$listing_file" 2>/dev/null || true
+
+    if ! LC_ALL=C tar -tvf "$archive" >"$listing_file" 2>>"$RUN_LOG"; then
+        rm -f -- "$listing_file"
+        return 1
+    fi
+
+    while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+
+        mode="$(awk '{print $1}' <<< "$line")"
+        size="$(awk '{print $3}' <<< "$line")"
+        member="$(awk '{print $6}' <<< "$line")"
+
+        [[ "$mode" == -* ]] || continue
+        [[ "$size" =~ ^[0-9]+$ ]] || continue
+        (( size > 0 )) || continue
+
+        if is_safe_signed_member_path "$member"; then
+            printf '%s\t%s\n' "$size" "$member"
+        fi
+    done < "$listing_file" |
         LC_ALL=C sort -n -k1,1 -k2,2
+
+    rm -f -- "$listing_file"
 }
 
 select_verify_members()
@@ -1276,7 +1416,10 @@ keep_restore_output()
 
     timestamp="$(date '+%Y%m%d-%H%M%S')"
     keep_root="${VERIFY_WORK_ROOT%/}/kept/${archive##*/}"
-    keep_dir="${keep_root}/${member}.restore.${timestamp}"
+
+    local member_label
+    member_label="${member//\//__}"
+    keep_dir="${keep_root}/${member_label}.restore.${timestamp}"
 
     mkdir -p "$keep_root" || return 1
     chmod 700 "${VERIFY_WORK_ROOT%/}/kept" "$keep_root" 2>/dev/null || true
@@ -1603,7 +1746,7 @@ post_verify_archive()
     selected_file="${verify_root}/selected-members.manifest"
 
     log INFO "post-recovery verification started archive=$archive mode=$POST_VERIFY_MODE"
-    log INFO "post-verify controls: progress_interval=${POST_VERIFY_PROGRESS_INTERVAL_SEC}s adaptive_poll=$POST_VERIFY_ADAPTIVE_POLL fast_poll=${POST_VERIFY_FAST_POLL_MS}ms fast_window=${POST_VERIFY_FAST_POLL_WINDOW_SEC}s slow_poll=${POST_VERIFY_SLOW_POLL_MS}ms member_timeout=${POST_VERIFY_MEMBER_TIMEOUT_SEC}s gpg_timeout=${POST_VERIFY_GPG_LAYER_TIMEOUT_SEC}s zstd_timeout=${POST_VERIFY_ZSTD_TIMEOUT_SEC}s extract_timeout=${POST_VERIFY_EXTRACT_TIMEOUT_SEC}s checkpoint=$POST_VERIFY_CHECKPOINT"
+    log INFO "post-verify controls: progress_interval=${POST_VERIFY_PROGRESS_INTERVAL_SEC}s adaptive_poll=$POST_VERIFY_ADAPTIVE_POLL fast_poll=${POST_VERIFY_FAST_POLL_MS}ms fast_window=${POST_VERIFY_FAST_POLL_WINDOW_SEC}s slow_poll=${POST_VERIFY_SLOW_POLL_MS}ms member_timeout=${POST_VERIFY_MEMBER_TIMEOUT_SEC}s gpg_timeout=${POST_VERIFY_GPG_LAYER_TIMEOUT_SEC}s zstd_timeout=${POST_VERIFY_ZSTD_TIMEOUT_SEC}s extract_timeout=${POST_VERIFY_EXTRACT_TIMEOUT_SEC}s checkpoint=$POST_VERIFY_CHECKPOINT nested_signed_members=$POST_VERIFY_ALLOW_NESTED_SIGNED_MEMBERS"
 
     if ! tar -tf "$archive" >/dev/null 2>>"$RUN_LOG"; then
         log ERROR "outer tar cannot be listed: $archive"
@@ -2080,11 +2223,30 @@ case "$ACTION" in
 
     run)
         acquire_lock || exit 0
+        REQUESTED_ARCHIVE="${2:-}"
+        [[ -z "${3:-}" ]] || { log ERROR "too many arguments for run"; exit 2; }
+
         log INFO "scheduled recovery job started version=$VERSION"
         fetch_cloud_list || exit 1
         parse_cloud_files || exit 1
-        select_latest_file || exit 1
-        recover_latest "$LATEST_FILE"
+
+        if [[ -n "$REQUESTED_ARCHIVE" ]]; then
+            SELECTED_ARCHIVE="$(normalize_requested_archive "$REQUESTED_ARCHIVE")" || {
+                log ERROR "invalid custom archive name: $REQUESTED_ARCHIVE"
+                exit 2
+            }
+
+            if ! cloud_file_exists "$SELECTED_ARCHIVE"; then
+                log ERROR "requested cloud archive not found: $SELECTED_ARCHIVE"
+                exit 1
+            fi
+            log INFO "custom cloud archive selected: $SELECTED_ARCHIVE"
+        else
+            select_latest_file || exit 1
+            SELECTED_ARCHIVE="$LATEST_FILE"
+        fi
+
+        recover_latest "$SELECTED_ARCHIVE"
         rc=$?
         if (( rc == 0 )); then
             log INFO "scheduled recovery job finished successfully"
@@ -2108,13 +2270,20 @@ HiCloud Secure Storage Recovery v${VERSION}
 
 Usage:
   $0 run
+  $0 run <ArchiveName|ArchiveName.tar>
   $0 list
   $0 latest
   $0 status
   $0 version
 
+Examples:
+  $0 run
+  $0 run testfile-20260918
+  $0 run testfile-20260918.tar
+
 run performs:
-  cloud list -> latest YYYYMMDD.tar -> recovery -> stable check
+  cloud list -> latest safe *.tar by embedded YYYYMMDD date token
+  OR exact custom archive -> recovery -> stable check
   -> POST_VERIFY_MODE=smallest|random|all selection
   -> pinned GPG signature verify -> three GPG decrypt layers
   -> zstd -t -> inner tar list verify -> safe actual extraction
