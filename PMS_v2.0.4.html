@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>PMS 主機密碼管理系統</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --surface-3: #eef3f8;
+      --text: #172033;
+      --muted: #667085;
+      --line: #dfe7f1;
+      --primary: #155eef;
+      --primary-strong: #004eeb;
+      --primary-soft: #edf4ff;
+      --success: #067647;
+      --success-soft: #ecfdf3;
+      --warning: #b54708;
+      --warning-soft: #fffaeb;
+      --danger: #b42318;
+      --danger-soft: #fef3f2;
+      --info: #175cd3;
+      --info-soft: #eff8ff;
+      --shadow: 0 12px 32px rgba(16, 24, 40, .08);
+      --radius: 16px;
+      --sidebar: 252px;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, "Noto Sans TC", "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(21, 94, 239, .09), transparent 30%),
+        radial-gradient(circle at 92% 5%, rgba(23, 92, 211, .07), transparent 28%),
+        var(--bg);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    .app { min-height: 100vh; display: grid; grid-template-columns: var(--sidebar) 1fr; }
+    .sidebar {
+      position: fixed; inset: 0 auto 0 0; width: var(--sidebar);
+      display: flex; flex-direction: column; gap: 18px;
+      padding: 22px 16px;
+      background: linear-gradient(180deg, #0b1730 0%, #101f3f 58%, #0c1831 100%);
+      color: #e6ecf5;
+      z-index: 20;
+      box-shadow: 6px 0 24px rgba(16, 24, 40, .12);
+    }
+    .brand { display: flex; gap: 12px; align-items: center; padding: 2px 8px 12px; }
+    .brand-mark {
+      width: 42px; height: 42px; border-radius: 13px;
+      display: grid; place-items: center;
+      background: linear-gradient(145deg, #2e90fa, #155eef);
+      box-shadow: 0 8px 20px rgba(21, 94, 239, .34);
+      font-weight: 800; color: #fff; letter-spacing: -.5px;
+    }
+    .brand-title { font-size: 15px; font-weight: 750; color: #fff; line-height: 1.2; }
+    .brand-sub { margin-top: 4px; font-size: 11px; color: #98a8c2; letter-spacing: .04em; }
+
+    .nav-label { padding: 0 10px; margin: 3px 0 5px; color: #7f90ad; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
+    .nav { display: grid; gap: 5px; overflow-y: auto; padding-right: 2px; }
+    .nav-btn {
+      width: 100%; border: 0; color: #b9c5d8; background: transparent;
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 12px; border-radius: 11px; text-align: left;
+      transition: .18s ease; font-size: 14px;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .nav-btn.active { background: rgba(46, 144, 250, .18); color: #fff; box-shadow: inset 0 0 0 1px rgba(84,155,255,.18); }
+    .nav-btn.admin-only.locked { opacity: .38; cursor: not-allowed; }
+    .nav-icon { width: 20px; height: 20px; display: grid; place-items: center; font-size: 16px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.035); border-radius: 13px; }
+    .ws-mini { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #9fb0c8; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #667085; box-shadow: 0 0 0 4px rgba(102,112,133,.12); }
+    .dot.ok { background: #12b76a; box-shadow: 0 0 0 4px rgba(18,183,106,.12); }
+    .dot.busy { background: #f79009; box-shadow: 0 0 0 4px rgba(247,144,9,.12); }
+    .dot.bad { background: #f04438; box-shadow: 0 0 0 4px rgba(240,68,56,.12); }
+    .version { margin-top: 9px; color: #6f819f; font-size: 10px; }
+
+    .main { grid-column: 2; min-width: 0; padding: 20px 24px 36px; }
+    .topbar {
+      position: sticky; top: 0; z-index: 15;
+      margin: -20px -24px 20px; padding: 14px 24px;
+      display: flex; gap: 14px; align-items: center; justify-content: space-between;
+      background: rgba(244,247,251,.88); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(223,231,241,.75);
+    }
+    .page-title { font-size: 18px; font-weight: 760; letter-spacing: -.02em; }
+    .page-sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .clock { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; padding-right: 4px; }
+
+    .btn {
+      border: 1px solid var(--line); background: var(--surface); color: #344054;
+      min-height: 38px; padding: 8px 13px; border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      font-weight: 650; font-size: 13px; transition: .16s ease;
+      box-shadow: 0 1px 2px rgba(16,24,40,.03);
+    }
+    .btn:hover { border-color: #bdc9d9; transform: translateY(-1px); }
+    .btn:disabled { opacity: .46; cursor: not-allowed; transform: none; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn.primary:hover { background: var(--primary-strong); }
+    .btn.success { background: var(--success); border-color: var(--success); color: #fff; }
+    .btn.danger { background: #fff; border-color: #fda29b; color: var(--danger); }
+    .btn.soft { background: var(--surface-2); }
+    .btn.icon { width: 38px; padding: 0; }
+    .btn.sm { min-height: 32px; padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+
+    .view { display: none; animation: fade .18s ease; }
+    .view.active { display: block; }
+    @keyframes fade { from { opacity: .55; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+    .hero {
+      border: 1px solid rgba(198,212,232,.8); border-radius: 20px;
+      background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(248,251,255,.92));
+      box-shadow: var(--shadow); padding: 22px; margin-bottom: 18px;
+      display: grid; grid-template-columns: 1.25fr .75fr; gap: 20px; align-items: stretch;
+    }
+    .eyebrow { color: var(--primary); font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: .1em; }
+    .hero h1 { margin: 8px 0 8px; font-size: 27px; line-height: 1.2; letter-spacing: -.035em; }
+    .hero p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.75; max-width: 720px; }
+    .hero-status { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .metric { border: 1px solid var(--line); background: rgba(255,255,255,.72); border-radius: 13px; padding: 14px; }
+    .metric-k { color: var(--muted); font-size: 11px; }
+    .metric-v { margin-top: 7px; font-weight: 760; font-size: 14px; overflow-wrap: anywhere; }
+
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .card { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); box-shadow: 0 6px 22px rgba(16,24,40,.05); min-width: 0; }
+    .card-head { padding: 16px 18px 13px; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid #edf1f6; }
+    .card-title { font-weight: 750; font-size: 14px; }
+    .card-sub { margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .card-body { padding: 17px 18px; }
+    .card-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+    .status-banner { display: flex; align-items: center; gap: 10px; border-radius: 12px; padding: 11px 13px; font-size: 12px; border: 1px solid var(--line); background: var(--surface-2); }
+    .status-banner.ok { border-color: #abefc6; background: var(--success-soft); color: #05603a; }
+    .status-banner.warn { border-color: #fedf89; background: var(--warning-soft); color: #93370d; }
+    .status-banner.bad { border-color: #fecdca; background: var(--danger-soft); color: #912018; }
+
+    .field { display: grid; gap: 6px; margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { color: #344054; font-size: 11px; font-weight: 700; }
+    .control {
+      width: 100%; min-height: 40px; border: 1px solid #ced8e5; border-radius: 10px;
+      padding: 8px 11px; outline: none; background: #fff; color: var(--text); font-size: 13px;
+      transition: border .15s, box-shadow .15s;
+    }
+    .control:focus { border-color: #84adff; box-shadow: 0 0 0 3px rgba(21,94,239,.09); }
+    .control:disabled { background: #f2f4f7; color: #98a2b3; cursor: not-allowed; }
+    .password-wrap { position: relative; }
+    .password-wrap .control { padding-right: 44px; }
+    .password-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: #667085; padding: 6px; border-radius: 7px; }
+    .inline { display: flex; gap: 9px; align-items: center; }
+    .inline > .control { flex: 1; }
+    .help { color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 4px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 12px; }
+    .form-grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+
+    .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 4px 0 14px; }
+    .section-head h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+    .section-head p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .search { position: relative; min-width: 220px; flex: 1; max-width: 420px; }
+    .search input { padding-left: 34px; }
+    .search::before { content: "⌕"; position: absolute; left: 12px; top: 9px; color: #98a2b3; z-index: 1; font-size: 16px; }
+
+    .table-wrap { overflow: auto; max-height: 61vh; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+    thead th { position: sticky; top: 0; z-index: 2; text-align: left; background: #f8fafc; color: #475467; font-size: 10px; text-transform: uppercase; letter-spacing: .045em; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    tbody td { padding: 10px 12px; border-bottom: 1px solid #edf1f6; vertical-align: middle; white-space: nowrap; }
+    tbody tr:hover td { background: #fafcff; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+    .secret { letter-spacing: .08em; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 750; white-space: nowrap; }
+    .badge.ok { background: var(--success-soft); color: var(--success); }
+    .badge.bad { background: var(--danger-soft); color: var(--danger); }
+    .badge.info { background: var(--primary-soft); color: var(--info); }
+    .badge.neutral { background: #f2f4f7; color: #475467; }
+    .empty { text-align: center; padding: 38px 18px; color: var(--muted); }
+    .empty strong { display: block; color: #344054; margin-bottom: 5px; }
+
+    .kv-list { display: grid; gap: 10px; }
+    .kv { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid #edf1f6; font-size: 12px; }
+    .kv:last-child { border-bottom: 0; }
+    .kv .k { color: var(--muted); }
+    .kv .v { font-weight: 700; text-align: right; }
+
+    .terminal { background: #0b1220; color: #d6e1f0; border-radius: 13px; min-height: 220px; max-height: 430px; overflow: auto; padding: 14px; font: 11px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .terminal .dim { color: #71839f; }
+    .terminal .ok { color: #75e0a7; }
+    .terminal .bad { color: #f97066; }
+
+    .auth-grid { display: grid; grid-template-columns: minmax(220px,.65fr) minmax(0,1.35fr); gap: 16px; }
+    .check-list { max-height: 520px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+    .check-row { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-bottom: 1px solid #edf1f6; font-size: 12px; }
+    .check-row:last-child { border-bottom: 0; }
+    .check-row:hover { background: #fafcff; }
+    .check-row input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+    .login-shell { max-width: 780px; margin: 42px auto; }
+    .login-card { display: grid; grid-template-columns: .92fr 1.08fr; overflow: hidden; }
+    .login-aside { padding: 28px; color: #fff; background: linear-gradient(150deg, #102a56, #155eef); min-height: 390px; display: flex; flex-direction: column; justify-content: space-between; }
+    .login-aside h2 { margin: 0 0 10px; font-size: 24px; }
+    .login-aside p { margin: 0; color: #d1e0ff; font-size: 12px; line-height: 1.8; }
+    .login-main { padding: 28px; }
+    .login-main h3 { margin: 0 0 5px; font-size: 18px; }
+    .login-main > p { margin: 0 0 19px; color: var(--muted); font-size: 11px; }
+
+    .toast-stack { position: fixed; right: 20px; bottom: 20px; z-index: 80; display: grid; gap: 8px; width: min(390px, calc(100vw - 32px)); }
+    .toast { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 40px rgba(16,24,40,.16); padding: 12px 13px; animation: toastIn .2s ease; }
+    .toast .t-title { font-size: 12px; font-weight: 750; }
+    .toast .t-msg { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .toast .t-close { border: 0; background: transparent; color: #98a2b3; padding: 0 2px; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity:1; transform:none; } }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; padding: 20px; background: rgba(11,18,32,.46); backdrop-filter: blur(3px); }
+    .modal-backdrop.open { display: grid; }
+    .modal { width: min(520px,100%); background: #fff; border-radius: 16px; box-shadow: 0 22px 60px rgba(16,24,40,.28); overflow: hidden; }
+    .modal-head { padding: 18px 20px 12px; font-weight: 800; }
+    .modal-body { padding: 0 20px 18px; color: var(--muted); font-size: 12px; line-height: 1.7; white-space: pre-line; }
+    .modal-actions { padding: 14px 20px; display: flex; justify-content: flex-end; gap: 8px; background: #f8fafc; border-top: 1px solid var(--line); }
+
+    .mobile-menu { display: none; }
+    @media (max-width: 980px) {
+      :root { --sidebar: 220px; }
+      .hero { grid-template-columns: 1fr; }
+      .grid.three { grid-template-columns: 1fr 1fr; }
+      .auth-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .app { display: block; }
+      .sidebar { transform: translateX(-105%); transition: .2s ease; width: 250px; }
+      .sidebar.open { transform: translateX(0); }
+      .main { padding: 14px; }
+      .topbar { margin: -14px -14px 16px; padding: 12px 14px; }
+      .mobile-menu { display: inline-flex; }
+      .clock { display: none; }
+      .grid.two, .grid.three, .form-grid, .form-grid.three, .login-card { grid-template-columns: 1fr; }
+      .login-aside { min-height: auto; }
+      .login-shell { margin: 12px auto; }
+      .hero h1 { font-size: 23px; }
+      .table-wrap { max-height: 55vh; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">PMS</div>
+      <div>
+        <div class="brand-title">主機密碼管理系統</div>
+        <div class="brand-sub">PASSWORD MANAGEMENT</div>
+      </div>
+    </div>
+
+    <div class="nav-label">Workspace</div>
+    <nav class="nav" id="nav">
+      <button class="nav-btn active" data-view="overview"><span class="nav-icon">⌂</span><span>總覽</span></button>
+      <button class="nav-btn" data-view="vault"><span class="nav-icon">◈</span><span>密碼領用</span></button>
+      <button class="nav-btn admin-only locked" data-view="hosts"><span class="nav-icon">▣</span><span>主機清單</span></button>
+      <button class="nav-btn admin-only locked" data-view="webusers"><span class="nav-icon">◎</span><span>Web 使用者</span></button>
+      <button class="nav-btn admin-only locked" data-view="osaccounts"><span class="nav-icon">⌘</span><span>系統帳號</span></button>
+      <button class="nav-btn admin-only locked" data-view="authorizations"><span class="nav-icon">✓</span><span>授權對應</span></button>
+      <button class="nav-btn admin-only locked" data-view="passwords"><span class="nav-icon">◆</span><span>密碼資料</span></button>
+      <button class="nav-btn admin-only locked" data-view="settings"><span class="nav-icon">⚙</span><span>系統設定</span></button>
+      <button class="nav-btn admin-only locked" data-view="audit"><span class="nav-icon">≡</span><span>稽核日誌</span></button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="ws-mini"><span class="dot" id="wsDot"></span><span id="wsMiniText">Disconnected</span></div>
+      <div class="version">Frontend v2.0.3 · websocketd compatible</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="inline">
+        <button class="btn icon mobile-menu" id="menuBtn" aria-label="menu">☰</button>
+        <div>
+          <div class="page-title" id="pageTitle">系統總覽</div>
+          <div class="page-sub" id="pageSub">連線、登入與服務狀態</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="clock" id="clock"></span>
+        <span class="badge neutral" id="identityBadge">Guest</span>
+        <button class="btn sm" id="topConnectBtn">重新連線</button>
+        <button class="btn sm danger" id="topLogoutBtn" disabled>登出</button>
+      </div>
+    </header>
+
+    <section class="view active" id="view-overview">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Secure Operations Console</div>
+          <h1>集中管理主機、帳號、授權與密碼輪替</h1>
+          <p>此介面直接透過 WebSocket 溝通，由後端 PMS shell 流程讀寫既有文字檔。將連線、登入、查詢與管理操作分離，避免不同命令回應互相干擾。</p>
+          <div style="margin-top:15px" id="overviewBanner" class="status-banner">尚未連線。</div>
+        </div>
+        <div class="hero-status">
+          <div class="metric"><div class="metric-k">WebSocket</div><div class="metric-v" id="metricWs">Disconnected</div></div>
+          <div class="metric"><div class="metric-k">Environment</div><div class="metric-v" id="metricEnv">-</div></div>
+          <div class="metric"><div class="metric-k">Session</div><div class="metric-v" id="metricSession">Guest</div></div>
+          <div class="metric"><div class="metric-k">Last response</div><div class="metric-v" id="metricLast">-</div></div>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <article class="card">
+          <div class="card-head"><div><div class="card-title">連線設定</div><div class="card-sub">選擇 websocketd 環境並建立連線</div></div><span class="badge neutral" id="connectionBadge">Offline</span></div>
+          <div class="card-body">
+            <div class="field"><label for="environment">系統環境</label><select id="environment" class="control"><option value="ws://192.168.176.41:80/" selected>期貨商測試環境</option></select></div>
+            <div class="field"><label for="customWs">WebSocket URL（可選）</label><input id="customWs" class="control mono" type="text" placeholder="ws://192.168.176.41:80/ or 192.168.176.41:80"><div class="help">留白時使用上方選單。正式環境建議經 TLS reverse proxy 改用 wss://。</div></div>
+            <div class="inline"><button class="btn primary" id="connectBtn">連線</button><button class="btn" id="disconnectBtn" disabled>中斷</button></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><div class="card-title">使用者登入</div><div class="card-sub">使用既有 gen_file 認證流程</div></div><span class="badge neutral" id="loginBadge">Guest</span></div>
+          <div class="card-body">
+            <div class="field"><label for="loginUser">帳號</label><input id="loginUser" class="control" autocomplete="username" placeholder="例如 109101"></div>
+            <div class="field"><label for="loginPass">密碼</label><div class="password-wrap"><input id="loginPass" class="control" type="password" autocomplete="current-password" placeholder="輸入登入密碼"><button class="password-toggle" data-toggle-password="loginPass" type="button">◉</button></div></div>
+            <div class="inline"><button class="btn primary" id="loginBtn" disabled>登入</button><button class="btn" id="logoutBtn" disabled>清除登入</button></div>
+            <div class="help" id="loginHint">請先建立 WebSocket 連線。</div>
+          </div>
+        </article>
+      </div>
+
+      <div class="grid three" style="margin-top:16px">
+        <article class="card"><div class="card-body"><div class="metric-k">資料傳輸模式</div><div class="metric-v">Text / EOF framed</div><div class="help">每個命令收集到 EOF 才完成。</div></div></article>
+        <article class="card"><div class="card-body"><div class="metric-k">前端渲染</div><div class="metric-v">DOM text only</div><div class="help">後端欄位不以 innerHTML 注入。</div></div></article>
+        <article class="card"><div class="card-body"><div class="metric-k">閒置保護</div><div class="metric-v">30 minutes</div><div class="help">閒置後自動清除登入狀態。</div></div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-vault">
+      <div class="section-head"><div><h2>密碼領用</h2><p>查詢目前登入帳號已授權的系統帳密。</p></div><div class="toolbar"><button class="btn" id="vaultRefreshBtn">重新查詢</button><button class="btn" id="vaultMaskBtn">顯示密碼</button></div></div>
+      <div class="grid two">
+        <article class="card">
+          <div class="card-head"><div><div class="card-title">授權帳密</div><div class="card-sub" id="vaultSummary">登入後可查詢。</div></div></div>
+          <div class="table-wrap"><table><thead><tr><th>#</th><th>主機帳號</th><th>密碼</th><th>最近修改</th></tr></thead><tbody id="vaultTbody"></tbody></table><div class="empty" id="vaultEmpty"><strong>尚無資料</strong>請先登入並執行查詢。</div></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><div><div class="card-title">修改 Web 登入密碼</div><div class="card-sub">更新 gen_file 中目前登入帳號的密碼。</div></div></div>
+          <div class="card-body">
+            <div class="field"><label for="newLoginPass">新密碼</label><div class="password-wrap"><input id="newLoginPass" class="control" type="password" autocomplete="new-password" placeholder="至少 5 個字元"><button class="password-toggle" data-toggle-password="newLoginPass" type="button">◉</button></div></div>
+            <div class="field"><label for="confirmLoginPass">再次輸入</label><input id="confirmLoginPass" class="control" type="password" autocomplete="new-password"></div>
+            <button class="btn primary" id="changeLoginPassBtn" disabled>更新登入密碼</button>
+            <div class="help">完成後會清除目前登入狀態，請使用新密碼重新登入。</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="view" id="view-hosts">
+      <div class="section-head"><div><h2>主機清單</h2><p>管理 gem_file：IP、主機名稱、OS 類型與啟用狀態。</p></div><div class="toolbar"><div class="search"><input id="hostsSearch" class="control" placeholder="搜尋 IP / hostname / OS"></div><button class="btn" id="hostsRefreshBtn">重新整理</button></div></div>
+      <div class="grid two" style="grid-template-columns:minmax(0,1.5fr) minmax(320px,.5fr)">
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>IP</th><th>Hostname</th><th>OS</th><th>狀態</th><th>更新時間</th><th></th></tr></thead><tbody id="hostsTbody"></tbody></table><div class="empty" id="hostsEmpty"><strong>尚無資料</strong>按「重新整理」載入 gem_file。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">新增 / 修改主機</div><div class="card-sub">相同 IP 會更新既有紀錄。</div></div></div><div class="card-body">
+          <div class="field"><label>IP Address</label><input id="hostIp" class="control mono" placeholder="192.168.1.10"></div>
+          <div class="field"><label>Hostname</label><input id="hostName" class="control" placeholder="server01"></div>
+          <div class="field"><label>Operating System</label><select id="hostOs" class="control"><option>Linux</option><option>AIX</option><option>SunOS</option></select></div>
+          <div class="field"><label>狀態</label><select id="hostEnabled" class="control"><option value="Y">啟用</option><option value="N">停用</option></select></div>
+          <div class="inline"><button class="btn primary" id="hostSaveBtn">儲存</button><button class="btn" id="hostClearBtn">清除</button></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-webusers">
+      <div class="section-head"><div><h2>Web 使用者</h2><p>管理 gen_file：登入帳號、密碼、角色與啟用狀態。</p></div><div class="toolbar"><div class="search"><input id="usersSearch" class="control" placeholder="搜尋帳號 / role"></div><button class="btn" id="usersRefreshBtn">重新整理</button></div></div>
+      <div class="grid two" style="grid-template-columns:minmax(0,1.5fr) minmax(320px,.5fr)">
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>帳號</th><th>密碼</th><th>角色</th><th>狀態</th><th>更新時間</th><th></th></tr></thead><tbody id="usersTbody"></tbody></table><div class="empty" id="usersEmpty"><strong>尚無資料</strong>按「重新整理」載入 gen_file。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">新增 / 修改使用者</div><div class="card-sub">管理 PMS Web 登入身份。</div></div></div><div class="card-body">
+          <div class="field"><label>登入帳號</label><input id="webUserId" class="control" placeholder="109101"></div>
+          <div class="field"><label>登入密碼</label><div class="password-wrap"><input id="webUserPass" class="control" type="password"><button class="password-toggle" data-toggle-password="webUserPass" type="button">◉</button></div></div>
+          <div class="field"><label>角色</label><select id="webUserRole" class="control"><option value="USER">USER</option><option value="ADMIN">ADMIN</option><option value="ADMINA">ADMINA</option><option value="ADMINB">ADMINB</option><option value="GOD">GOD</option></select></div>
+          <div class="field"><label>狀態</label><select id="webUserEnabled" class="control"><option value="Y">啟用</option><option value="N">停用</option></select></div>
+          <div class="inline"><button class="btn primary" id="webUserSaveBtn">儲存</button><button class="btn" id="webUserClearBtn">清除</button></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-osaccounts">
+      <div class="section-head"><div><h2>系統帳號</h2><p>管理 geo_file：受 PMS 管理的作業系統帳號。</p></div><div class="toolbar"><div class="search"><input id="osSearch" class="control" placeholder="搜尋帳號 / 說明"></div><button class="btn" id="osRefreshBtn">重新整理</button></div></div>
+      <div class="grid two" style="grid-template-columns:minmax(0,1.5fr) minmax(320px,.5fr)">
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>系統帳號</th><th>說明</th><th>狀態</th><th>更新時間</th><th></th></tr></thead><tbody id="osTbody"></tbody></table><div class="empty" id="osEmpty"><strong>尚無資料</strong>按「重新整理」載入 geo_file。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">新增 / 修改系統帳號</div><div class="card-sub">相同帳號會更新既有紀錄。</div></div></div><div class="card-body">
+          <div class="field"><label>Account</label><input id="osAccount" class="control" placeholder="op1"></div>
+          <div class="field"><label>說明</label><input id="osDesc" class="control" placeholder="operator"></div>
+          <div class="field"><label>狀態</label><select id="osEnabled" class="control"><option value="Y">啟用</option><option value="N">停用</option></select></div>
+          <div class="inline"><button class="btn primary" id="osSaveBtn">儲存</button><button class="btn" id="osClearBtn">清除</button></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-authorizations">
+      <div class="section-head"><div><h2>授權對應</h2><p>管理 gep_file：Web 使用者可領用哪些系統帳號。</p></div><div class="toolbar"><button class="btn" id="authRefreshBtn">重新載入</button><button class="btn primary" id="authSaveBtn">儲存授權</button></div></div>
+      <div class="auth-grid">
+        <article class="card"><div class="card-head"><div><div class="card-title">Web 使用者</div><div class="card-sub">選擇要編輯授權的帳號。</div></div></div><div class="card-body"><div class="field"><label>使用者</label><select id="authUser" class="control"><option value="">請先載入</option></select></div><div class="status-banner" id="authSummary">尚未載入授權資料。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">系統帳號授權</div><div class="card-sub">勾選 = Y；未勾選 = N。儲存時會以既有 gepSave 格式送出。</div></div><div class="search"><input id="authSearch" class="control" placeholder="搜尋系統帳號"></div></div><div class="card-body"><div class="check-list" id="authCheckList"><div class="empty"><strong>尚無資料</strong>請先重新載入。</div></div></div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-passwords">
+      <div class="section-head"><div><h2>密碼資料</h2><p>查詢 pms_file 解密結果並執行既有密碼輪替流程。</p></div><div class="toolbar"><div class="search"><input id="passwordsSearch" class="control" placeholder="搜尋系統帳號"></div><button class="btn" id="passwordsRefreshBtn">重新整理</button><button class="btn" id="passwordsMaskBtn">顯示密碼</button></div></div>
+      <div class="grid two" style="grid-template-columns:minmax(0,1.4fr) minmax(340px,.6fr)">
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>帳號</th><th>密碼</th><th>Prefix</th><th>Suffix</th><th>修改時間</th></tr></thead><tbody id="passwordsTbody"></tbody></table><div class="empty" id="passwordsEmpty"><strong>尚無資料</strong>按「重新整理」載入 pms_file。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">執行密碼輪替</div><div class="card-sub">呼叫既有 pmsSave 流程；可能需要較長時間。</div></div></div><div class="card-body">
+          <div class="field"><label>目標帳號</label><input id="rotationAccounts" class="control" placeholder="all 或 op1|op2"><div class="help">`all` = 所有啟用帳號；多個帳號使用 | 分隔。</div></div>
+          <button class="btn danger" id="rotationBtn">執行密碼輪替</button>
+          <div class="help">執行前會要求再次確認。進度會即時顯示於下方終端。</div>
+          <div class="terminal" id="rotationTerminal" style="margin-top:14px"><span class="dim">等待執行...</span></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-settings">
+      <div class="section-head"><div><h2>系統設定</h2><p>管理 ger_file、ges_file、get_file、geu_file；geq_file 目前僅顯示狀態。</p></div><div class="toolbar"><button class="btn" id="settingsReloadBtn">重新載入設定</button></div></div>
+      <div class="grid two">
+        <article class="card"><div class="card-head"><div><div class="card-title">密碼政策</div><div class="card-sub">ger_file / ges_file</div></div></div><div class="card-body">
+          <div class="field"><label>隨機密碼長度</label><input id="cfgPwdLen" class="control" type="number" min="8" max="64"></div>
+          <div class="field"><label>Web 登入密碼到期天數</label><input id="cfgExpire" class="control" type="number" min="1" max="3650"></div>
+          <button class="btn primary" id="cfgPolicySaveBtn">儲存密碼政策</button>
+        </div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">自動輪替排程</div><div class="card-sub">get_file / root crontab</div></div></div><div class="card-body">
+          <div class="field"><label>週期</label><select id="cfgFreq" class="control"><option value="DAILY">DAILY</option><option value="WEEKLY">WEEKLY</option><option value="MONTHLY">MONTHLY</option><option value="HOURLY">HOURLY</option></select></div>
+          <div class="form-grid"><div class="field"><label>Hour</label><input id="cfgHour" class="control" type="number" min="0" max="23"></div><div class="field"><label>Minute</label><input id="cfgMinute" class="control" type="number" min="0" max="59"></div></div>
+          <div class="field"><label>輪替帳號</label><input id="cfgAccounts" class="control" value="all" placeholder="all 或 op1|op2"></div>
+          <button class="btn primary" id="cfgScheduleSaveBtn">儲存排程</button>
+        </div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">加密 Seed</div><div class="card-sub">geu_file；更新時會重新加密 pms_file。</div></div><span class="badge bad">敏感操作</span></div><div class="card-body">
+          <div class="field"><label>目前 Seed</label><input id="cfgSeedCurrent" class="control mono" type="password" disabled></div>
+          <div class="field"><label>新 Seed</label><input id="cfgSeedNew" class="control mono" type="password" placeholder="輸入新的 OpenSSL passphrase"></div>
+          <button class="btn danger" id="cfgSeedSaveBtn">更新 Seed 並重加密</button>
+        </div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">功能權限表</div><div class="card-sub">geq_file</div></div><span class="badge neutral">Read-only</span></div><div class="card-body">
+          <div class="status-banner warn">目前上傳的 pmsGP.sh 中 geqQuery / geqSave handler 為註解狀態，因此 v2 不會送出修改命令，避免產生假成功。</div>
+          <div class="help" style="margin-top:10px">若要啟用角色功能權限，建議下一版把 geqQuery / geqSave 重新加入後端，並由後端實際套用權限，而不只是維護文字檔。</div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-audit">
+      <div class="section-head"><div><h2>稽核日誌</h2><p>查詢 log_file，可依登入帳號與日期區間篩選。</p></div><div class="toolbar"><button class="btn" id="auditRefreshBtn">查詢</button></div></div>
+      <article class="card">
+        <div class="card-head"><div class="toolbar" style="width:100%"><input id="auditUser" class="control" style="max-width:220px" placeholder="帳號；留白=全部"><input id="auditFrom" class="control" style="max-width:170px" type="date"><input id="auditTo" class="control" style="max-width:170px" type="date"><div class="search"><input id="auditSearch" class="control" placeholder="搜尋 mode / type / message"></div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>User</th><th>Mode</th><th>Type</th><th>Message</th><th>Timestamp</th></tr></thead><tbody id="auditTbody"></tbody></table><div class="empty" id="auditEmpty"><strong>尚無資料</strong>設定日期範圍後查詢 log_file。</div></div>
+      </article>
+    </section>
+  </main>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head" id="modalTitle">確認操作</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions"><button class="btn" id="modalCancel">取消</button><button class="btn primary" id="modalConfirm">確認</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const APP_VERSION = '2.0.3';
+  const IDLE_MS = 30 * 60 * 1000;
+  const ADMIN_ROLES = new Set(['ADMIN', 'ADMINA', 'ADMINB', 'GOD']);
+  const FORBIDDEN_BASIC = /[\r\n\t;&`$<>\\]/;
+  const state = {
+    ws: null,
+    wsState: 'disconnected',
+    queue: [],
+    active: null,
+    user: '',
+    password: '',
+    role: '',
+    auth: 'USER',
+    loggedIn: false,
+    vaultMasked: true,
+    adminPasswordsMasked: true,
+    datasets: { vault: [], hosts: [], users: [], os: [], auth: [], passwords: [], audit: [] },
+    idleTimer: null,
+    lastResponseAt: null,
+    settings: { pwdLen: '', expire: '', freq: '', hour: '', minute: '', seed: '' }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  const viewMeta = {
+    overview: ['系統總覽', '連線、登入與服務狀態'],
+    vault: ['密碼領用', '查詢目前登入帳號可領用的帳密'],
+    hosts: ['主機清單', 'gem_file 主機與 OS 管理'],
+    webusers: ['Web 使用者', 'gen_file 登入身份管理'],
+    osaccounts: ['系統帳號', 'geo_file 系統帳號管理'],
+    authorizations: ['授權對應', 'gep_file 使用者與系統帳號授權'],
+    passwords: ['密碼資料', 'pms_file 密碼查詢與輪替'],
+    settings: ['系統設定', '密碼政策、排程與加密設定'],
+    audit: ['稽核日誌', 'log_file 操作歷程查詢']
+  };
+
+  function nowText() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function dateInputValue(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+  function dateForBackend(v) { return (v || '').replaceAll('-', '/'); }
+  function isAdmin() { return ADMIN_ROLES.has(state.role); }
+  function wsOpen() { return state.ws && state.ws.readyState === WebSocket.OPEN; }
+  function clean(v) { return String(v ?? '').trim(); }
+  function maskSecret(v) { return v ? '••••••••••' : ''; }
+  function setText(id, value) { const el = $(id); if (el) el.textContent = value; }
+  function setVisible(id, show) { const el = $(id); if (el) el.hidden = !show; }
+
+  function validateToken(value, label, opts = {}) {
+    const v = clean(value);
+    if (!v && !opts.allowEmpty) throw new Error(`${label}不可空白。`);
+    if (/\s/.test(v)) throw new Error(`${label}不可包含空白字元。`);
+    if (FORBIDDEN_BASIC.test(v)) throw new Error(`${label}包含不允許的 shell 控制字元。`);
+    if (!opts.allowPipe && v.includes('|')) throw new Error(`${label}不可包含 |。`);
+    if (!opts.allowComma && v.includes(',')) throw new Error(`${label}不可包含 ,。`);
+    return v;
+  }
+  function validateNewPassword(value) {
+    const v=clean(value);
+    if(v.length<5||v.length>128) throw new Error('新密碼長度需為 5~128 個字元。');
+    if(!/^[A-Za-z0-9@._%+=:!#^-]+$/.test(v)) throw new Error('新密碼僅可使用英數字及 @ . _ % + = : ! # ^ -。');
+    return v;
+  }
+  function validateIp(v) {
+    v = validateToken(v, 'IP Address');
+    const parts = v.split('.');
+    if (parts.length !== 4 || parts.some(x => !/^\d{1,3}$/.test(x) || Number(x) > 255)) throw new Error('IP Address 格式不正確。');
+    return v;
+  }
+
+  function toast(title, message = '', type = 'info', ttl = 4500) {
+    const box = document.createElement('div'); box.className = 'toast';
+    const icon = document.createElement('span'); icon.className = `badge ${type === 'error' ? 'bad' : type === 'success' ? 'ok' : 'info'}`; icon.textContent = type === 'error' ? '!' : type === 'success' ? '✓' : 'i';
+    const body = document.createElement('div');
+    const t = document.createElement('div'); t.className = 't-title'; t.textContent = title;
+    const m = document.createElement('div'); m.className = 't-msg'; m.textContent = message;
+    body.append(t, m);
+    const close = document.createElement('button'); close.className = 't-close'; close.textContent = '×'; close.onclick = () => box.remove();
+    box.append(icon, body, close); $('toastStack').appendChild(box);
+    if (ttl) setTimeout(() => box.remove(), ttl);
+  }
+
+  function confirmAction(title, body, confirmLabel = '確認') {
+    return new Promise(resolve => {
+      $('modalTitle').textContent = title; $('modalBody').textContent = body; $('modalConfirm').textContent = confirmLabel;
+      $('modalBackdrop').classList.add('open');
+      const done = val => { $('modalBackdrop').classList.remove('open'); $('modalConfirm').onclick = null; $('modalCancel').onclick = null; resolve(val); };
+      $('modalConfirm').onclick = () => done(true); $('modalCancel').onclick = () => done(false);
+    });
+  }
+
+  function setConnectionUi(mode, detail = '') {
+    state.wsState = mode;
+    const dot = $('wsDot'), badge = $('connectionBadge');
+    dot.className = 'dot';
+
+    if (mode === 'connected') {
+      dot.classList.add('ok');
+      badge.className = 'badge ok';
+      badge.textContent = 'Online';
+      setText('wsMiniText', 'Connected');
+      setText('metricWs', 'Connected');
+    } else if (mode === 'connecting') {
+      dot.classList.add('busy');
+      badge.className = 'badge info';
+      badge.textContent = 'Connecting';
+      setText('wsMiniText', 'Connecting');
+      setText('metricWs', 'Connecting');
+    } else if (mode === 'error') {
+      dot.classList.add('bad');
+      badge.className = 'badge bad';
+      badge.textContent = 'Error';
+      setText('wsMiniText', 'Error');
+      setText('metricWs', 'Error');
+    } else {
+      badge.className = 'badge neutral';
+      badge.textContent = 'Offline';
+      setText('wsMiniText', 'Disconnected');
+      setText('metricWs', 'Disconnected');
+    }
+
+    $('connectBtn').disabled = mode === 'connecting';
+    $('connectBtn').textContent = mode === 'connected' ? '重新連線' : '連線';
+    $('disconnectBtn').disabled = !['connected', 'error'].includes(mode);
+    $('loginBtn').disabled = mode !== 'connected';
+
+    $('overviewBanner').className =
+      `status-banner ${mode === 'connected' ? 'ok' : mode === 'error' ? 'bad' : mode === 'connecting' ? 'warn' : ''}`;
+
+    $('overviewBanner').textContent = detail ||
+      (mode === 'connected'
+        ? 'WebSocket 已連線，可進行登入。'
+        : mode === 'connecting'
+          ? '正在建立 WebSocket 連線...'
+          : mode === 'error'
+            ? 'WebSocket 連線發生錯誤。'
+            : 'WebSocket 尚未連線。');
+
+    $('topConnectBtn').textContent = mode === 'connected' ? '重新連線' : '連線';
+    $('topConnectBtn').disabled = mode === 'connecting';
+    $('loginHint').textContent =
+      mode === 'connected' ? '連線已建立，請輸入 PMS 帳號密碼。' : '請先建立 WebSocket 連線。';
+  }
+
+  function setIdentityUi() {
+    const who = state.loggedIn ? `${state.user} · ${state.role}` : 'Guest';
+    setText('identityBadge', who); setText('metricSession', who); setText('loginBadge', state.loggedIn ? state.role : 'Guest');
+    $('identityBadge').className = `badge ${state.loggedIn ? (isAdmin() ? 'info' : 'ok') : 'neutral'}`;
+    $('loginBadge').className = $('identityBadge').className;
+    $('topLogoutBtn').disabled = !state.loggedIn; $('logoutBtn').disabled = !state.loggedIn; $('changeLoginPassBtn').disabled = !state.loggedIn;
+    $$('.admin-only').forEach(el => el.classList.toggle('locked', !isAdmin()));
+  }
+
+  function normalizeWsUrl(raw) {
+    let url = clean(raw);
+    if (!url) return '';
+    // Accept convenient host:port input as well as a complete ws:// / wss:// URL.
+    if (!/^wss?:\/\//i.test(url)) url = 'ws://' + url;
+    return url;
+  }
+  function currentWsUrl() { return normalizeWsUrl(clean($('customWs').value) || $('environment').value); }
+  function connect() {
+    disconnect(false);
+    clearSession(false);
+
+    const url = currentWsUrl();
+    if (!/^wss?:\/\//i.test(url)) {
+      setConnectionUi('error', `WebSocket URL 格式不正確：${url || '(empty)'}`);
+      toast('連線失敗', 'WebSocket URL 格式不正確。', 'error');
+      return;
+    }
+
+    // A normal HTTPS page cannot reliably open an insecure ws:// endpoint.
+    if (location.protocol === 'https:' && /^ws:\/\//i.test(url)) {
+      const msg = `目前頁面為 HTTPS，但 WebSocket 使用 ${url}。瀏覽器會阻擋 mixed content；請改用 wss://。`;
+      console.error('[PMS WebSocket]', msg);
+      setText('metricEnv', url);
+      setConnectionUi('error', msg);
+      toast('瀏覽器阻擋 WebSocket', 'HTTPS 頁面必須搭配 wss://。', 'error', 9000);
+      return;
+    }
+
+    let opened = false;
+    let hadError = false;
+    setText('metricEnv', url);
+    setConnectionUi('connecting', `正在連線 ${url}`);
+
+    try {
+      state.ws = new WebSocket(url);
+    } catch (e) {
+      const msg = `WebSocket 建立失敗：${e.name || 'Error'}: ${e.message || e}`;
+      console.error('[PMS WebSocket]', msg, e);
+      setConnectionUi('error', msg);
+      return;
+    }
+
+    state.ws.onopen = () => {
+      opened = true;
+      console.info('[PMS WebSocket] OPEN', url);
+      setConnectionUi('connected', `已連線：${url}`);
+      toast('連線成功', url, 'success');
+    };
+
+    state.ws.onmessage = evt => handleWsMessage(evt.data);
+
+    state.ws.onerror = evt => {
+      hadError = true;
+      console.error('[PMS WebSocket] ERROR', { url, readyState: state.ws?.readyState, event: evt });
+      setConnectionUi(
+        'error',
+        `WebSocket 錯誤：${url}。請查看 F12 Console / Network → WS；若隨後 close=1006，通常是握手、瀏覽器安全政策或後端程序立即退出。`
+      );
+    };
+
+    state.ws.onclose = evt => {
+      const closeInfo =
+        `WebSocket 已關閉：code=${evt.code}, clean=${evt.wasClean ? 'yes' : 'no'}` +
+        `${evt.reason ? `, reason=${evt.reason}` : ''} · ${url}`;
+
+      console.warn('[PMS WebSocket] CLOSE', {
+        url,
+        opened,
+        hadError,
+        code: evt.code,
+        reason: evt.reason,
+        wasClean: evt.wasClean
+      });
+
+      rejectActive(new Error(closeInfo));
+      clearQueue(new Error(closeInfo));
+      state.ws = null;
+
+      // Preserve an error state instead of overwriting it with a generic Offline badge.
+      if (hadError || !opened || !evt.wasClean || evt.code === 1006) {
+        setConnectionUi('error', closeInfo);
+      } else {
+        setConnectionUi('disconnected', closeInfo);
+      }
+      clearSession(false);
+    };
+  }
+  function disconnect(notify = true) {
+    if (state.ws) { state.ws.onclose = null; try { state.ws.close(); } catch (_) {} state.ws = null; }
+    rejectActive(new Error('連線已關閉。')); clearQueue(new Error('連線已關閉。')); setConnectionUi('disconnected','連線已關閉。'); if (notify) toast('已中斷連線');
+  }
+
+  function clearQueue(error) { while (state.queue.length) state.queue.shift().reject(error); }
+  function rejectActive(error) { if (state.active) { const a = state.active; state.active = null; a.reject(error); } }
+  function handleWsMessage(data) {
+    if (data instanceof Blob) { data.text().then(handleTextChunk); return; }
+    if (data instanceof ArrayBuffer) { handleTextChunk(new TextDecoder().decode(data)); return; }
+    handleTextChunk(String(data));
+  }
+  function handleTextChunk(chunk) {
+    const lines = chunk.replace(/\r/g,'').split('\n');
+    lines.forEach(line => {
+      if (!state.active) return;
+      if (line === 'EOF') {
+        const a = state.active; state.active = null; state.lastResponseAt = new Date(); setText('metricLast', nowText());
+        const errLine=a.lines.find(x=>x.startsWith('ERROR|')); if(errLine){a.reject(new Error(errLine.slice(6)||'Backend error'));}else{a.resolve(a.lines.slice());} pumpQueue(); return;
+      }
+      if (line !== '') { state.active.lines.push(line); if (state.active.onLine) state.active.onLine(line); }
+    });
+  }
+  function sendRequest(command, options = {}) {
+    return new Promise((resolve,reject) => { state.queue.push({command, resolve, reject, lines:[], onLine:options.onLine || null, timeout:options.timeout || 120000}); pumpQueue(); });
+  }
+  function pumpQueue() {
+    if (state.active || !state.queue.length) return;
+    if (!wsOpen()) { clearQueue(new Error('WebSocket 尚未連線。')); return; }
+    const req = state.queue.shift(); state.active = req;
+    const timer = setTimeout(() => { if (state.active === req) { state.active = null; req.reject(new Error('命令逾時，未收到 EOF。')); pumpQueue(); } }, req.timeout);
+    const resolve0 = req.resolve, reject0 = req.reject;
+    req.resolve = v => { clearTimeout(timer); resolve0(v); }; req.reject = e => { clearTimeout(timer); reject0(e); };
+    try { state.ws.send(req.command); } catch (e) { state.active = null; req.reject(e); pumpQueue(); }
+  }
+
+  function pmsCommand(type, mode, user, pwd, p1='1', p2='1', p3='1', p4='1') {
+    return ['pmsGP', type, mode, user, pwd, p1, p2, p3, p4].map(String).join(' ');
+  }
+  function sessionCommand(mode,p1='1',p2='1',p3='1',p4='1') {
+    if (!state.loggedIn) throw new Error('請先登入。');
+    return pmsCommand(state.role, mode, state.user, state.password, p1,p2,p3,p4);
+  }
+  async function request(mode,p1='1',p2='1',p3='1',p4='1', options={}) { return sendRequest(sessionCommand(mode,p1,p2,p3,p4), options); }
+  function parseRows(lines, expectedMin = 1) { return lines.map(x => x.split('|')).filter(x => x.length >= expectedMin); }
+
+  async function login() {
+    if (!wsOpen()) { toast('尚未連線','請先建立 WebSocket 連線。','error'); return; }
+    try {
+      const user = validateToken($('loginUser').value,'登入帳號'); const pass = validateToken($('loginPass').value,'登入密碼',{allowPipe:true,allowComma:true});
+      if (user.length < 5 || pass.length < 5) throw new Error('登入帳號與密碼至少需 5 個字元。');
+      $('loginBtn').disabled = true; const lines = await sendRequest(pmsCommand('USER','loginQuery',user,pass,'1','1','1','1'));
+      const arr = (lines[0] || '').split('|');
+      if (arr[0] === '1') {
+        state.user=user; state.password=pass; state.role=clean(arr[1]) || 'USER'; state.auth=state.role; state.loggedIn=true; setIdentityUi(); resetIdle();
+        toast('登入成功', `${user} (${state.role})`, 'success'); setText('loginHint', `登入成功：${user} / ${state.role}`); await loadVault();
+      } else if (arr[0] === '-1') {
+        state.user=user; state.password=pass; state.role=clean(arr[2])||'USER'; state.auth=state.role; state.loggedIn=true; setIdentityUi();
+        toast('密碼已過期','帳號已鎖定，請先更新登入密碼。','error',7000); showView('vault');
+      } else throw new Error('帳號或密碼不正確。');
+    } catch (e) { toast('登入失敗', e.message, 'error',7000); clearSession(false); }
+    finally { $('loginBtn').disabled = !wsOpen(); }
+  }
+  function clearSession(clearInputs = true) {
+    state.user=''; state.password=''; state.role=''; state.auth='USER'; state.loggedIn=false; clearTimeout(state.idleTimer); state.datasets.vault=[]; renderVault(); setIdentityUi();
+    if (clearInputs) { $('loginUser').value=''; $('loginPass').value=''; $('newLoginPass').value=''; $('confirmLoginPass').value=''; }
+    if (isViewAdmin() && !isAdmin()) showView('overview');
+  }
+  function logout() { clearSession(true); toast('已登出','登入資訊已從前端記憶體清除。'); }
+  function resetIdle() { clearTimeout(state.idleTimer); if (state.loggedIn) state.idleTimer=setTimeout(() => { clearSession(true); toast('閒置逾時','已自動清除登入狀態。','error',7000); }, IDLE_MS); }
+
+  function isViewAdmin() { const active=document.querySelector('.view.active'); return active && !['view-overview','view-vault'].includes(active.id); }
+  function showView(name) {
+    if (!viewMeta[name]) return; if (!['overview','vault'].includes(name) && !isAdmin()) { toast('權限不足','此功能僅供管理角色使用。','error'); return; }
+    $$('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`)); $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view===name));
+    setText('pageTitle',viewMeta[name][0]); setText('pageSub',viewMeta[name][1]); $('sidebar').classList.remove('open');
+  }
+
+  async function loadVault() {
+    if (!state.loggedIn) { toast('請先登入','','error'); return; }
+    try {
+      const lines = await request('pmsQuery','@','1','1','1');
+      if (lines.some(x => /Binary file .* matches/i.test(x))) throw new Error('後端將解密資料判定為 binary；請更新 pmsGP_v2.1.sh。');
+      const rows = parseRows(lines,4).filter(r => /^\d+$/.test(r[0]) && r.length >= 4);
+      if (lines.length && !rows.length) throw new Error(`後端回應格式異常：${lines[0]}`);
+      state.datasets.vault = rows;
+      renderVault();
+      setText('vaultSummary', `${rows.length} 筆授權帳密 · ${nowText()}`);
+    } catch(e){
+      state.datasets.vault=[]; renderVault();
+      setText('vaultSummary','查詢失敗。');
+      toast('密碼查詢失敗',e.message,'error',8000);
+    }
+  }
+  function renderVault() {
+    renderTable('vaultTbody','vaultEmpty',state.datasets.vault,row => [row[0],row[1],state.vaultMasked?maskSecret(row[2]):row[2],row[3]], {secretCols:[2]});
+  }
+
+  async function changeLoginPassword() {
+    try {
+      if (!state.loggedIn) throw new Error('請先登入。'); const p1=validateNewPassword($('newLoginPass').value); const p2=clean($('confirmLoginPass').value);
+      if (p1.length<5) throw new Error('新密碼至少需 5 個字元。'); if (p1!==p2) throw new Error('兩次輸入的新密碼不一致。');
+      const ok=await confirmAction('更新登入密碼',`將更新 ${state.user} 的 PMS Web 登入密碼，完成後會自動登出。`,'更新'); if(!ok)return;
+      await request('genSave',state.user,p1,state.role,'Y'); toast('密碼已更新','請使用新密碼重新登入。','success'); clearSession(true);
+    } catch(e){toast('更新失敗',e.message,'error');}
+  }
+
+  function renderTable(tbodyId, emptyId, rows, cellMap, options={}) {
+    const tbody=$(tbodyId); tbody.replaceChildren(); $(emptyId).hidden=rows.length>0;
+    rows.forEach((row, idx) => {
+      const tr=document.createElement('tr'); const cells=cellMap(row,idx);
+      cells.forEach((cell,ci) => { const td=document.createElement('td'); td.textContent=String(cell ?? ''); if(options.monoCols?.includes(ci))td.classList.add('mono'); if(options.secretCols?.includes(ci))td.classList.add('mono','secret'); tr.appendChild(td); });
+      if(options.action) { const td=document.createElement('td'); td.appendChild(options.action(row,idx)); tr.appendChild(td); }
+      tbody.appendChild(tr);
+    });
+  }
+  function editButton(label, cb) { const b=document.createElement('button'); b.className='btn sm'; b.textContent=label; b.onclick=cb; return b; }
+  function filterRows(rows,q){ q=clean(q).toLowerCase(); return !q ? rows : rows.filter(r=>r.join(' ').toLowerCase().includes(q)); }
+
+  async function loadHosts(){try{state.datasets.hosts=parseRows(await request('gemQuery','@','1','1','1'),6);renderHosts();}catch(e){toast('主機清單載入失敗',e.message,'error');}}
+  function renderHosts(){const rows=filterRows(state.datasets.hosts,$('hostsSearch').value);renderTable('hostsTbody','hostsEmpty',rows,r=>[r[0],r[1],r[2],r[3],r[4]==='Y'?'啟用':'停用',r[5]],{monoCols:[1],action:r=>editButton('編輯',()=>{ $('hostIp').value=r[1];$('hostName').value=r[2];$('hostOs').value=r[3];$('hostEnabled').value=r[4]; })});}
+  async function saveHost(){try{const ip=validateIp($('hostIp').value),hn=validateToken($('hostName').value,'Hostname'),os=validateToken($('hostOs').value,'OS'),en=$('hostEnabled').value; state.datasets.hosts=parseRows(await request('gemSave',ip,hn,os,en),6);renderHosts();toast('主機資料已儲存',`${ip} ${hn}`,'success');}catch(e){toast('儲存失敗',e.message,'error');}}
+
+  async function loadUsers(){try{state.datasets.users=parseRows(await request('genQuery','@','1','1','1'),6);renderUsers();}catch(e){toast('使用者載入失敗',e.message,'error');}}
+  function renderUsers(){const rows=filterRows(state.datasets.users,$('usersSearch').value);renderTable('usersTbody','usersEmpty',rows,r=>[r[0],r[1],state.adminPasswordsMasked?maskSecret(r[2]):r[2],r[3],r[4]==='Y'?'啟用':'停用',r[5]],{secretCols:[2],action:r=>editButton('編輯',()=>{$('webUserId').value=r[1];$('webUserPass').value=r[2];$('webUserRole').value=r[3];$('webUserEnabled').value=r[4];})});}
+  async function saveUser(){try{const u=validateToken($('webUserId').value,'登入帳號'),p=validateNewPassword($('webUserPass').value),role=validateToken($('webUserRole').value,'角色'),en=$('webUserEnabled').value; state.datasets.users=parseRows(await request('genSave',u,p,role,en),6);renderUsers();toast('Web 使用者已儲存',u,'success');if(u===state.user && p!==state.password){toast('目前帳號密碼已變更','請使用新密碼重新登入。','info',7000);clearSession(true);}}catch(e){toast('儲存失敗',e.message,'error');}}
+
+  async function loadOs(){try{state.datasets.os=parseRows(await request('geoQuery','@','1','1','1'),5);renderOs();}catch(e){toast('系統帳號載入失敗',e.message,'error');}}
+  function renderOs(){const rows=filterRows(state.datasets.os,$('osSearch').value);renderTable('osTbody','osEmpty',rows,r=>[r[0],r[1],r[2],r[3]==='Y'?'啟用':'停用',r[4]],{action:r=>editButton('編輯',()=>{$('osAccount').value=r[1];$('osDesc').value=r[2];$('osEnabled').value=r[3];})});}
+  async function saveOs(){try{const a=validateToken($('osAccount').value,'系統帳號'),d=validateToken($('osDesc').value,'說明'),en=$('osEnabled').value; state.datasets.os=parseRows(await request('geoSave',a,d,en,'1'),5);renderOs();toast('系統帳號已儲存',a,'success');}catch(e){toast('儲存失敗',e.message,'error');}}
+
+  async function loadAuthorizations(){
+    try {
+      if(!state.datasets.users.length) await loadUsers(); if(!state.datasets.os.length) await loadOs();
+      state.datasets.auth=parseRows(await request('gepQuery','@','1','1','1'),3);
+      const current=$('authUser').value; $('authUser').replaceChildren(new Option('請選擇使用者',''));
+      state.datasets.users.forEach(r=>{if(r[4]==='Y')$('authUser').appendChild(new Option(`${r[1]} (${r[3]})`,r[1]));}); if(current && Array.from($('authUser').options).some(o=>o.value===current))$('authUser').value=current;
+      renderAuth();
+    } catch(e){toast('授權資料載入失敗',e.message,'error');}
+  }
+  function normalizeAuthRow(row){
+    // gepQuery currently returns line-numbered joined rows. Locate the first Y/N token at the end and the first two useful identifiers.
+    const vals=row.slice(); const n=vals[0]; const user=vals[1]||''; const account=vals[2]||''; const enabled=vals[vals.length-1]||''; return {n,user,account,enabled};
+  }
+  function renderAuth(){
+    const user=$('authUser').value, q=clean($('authSearch').value).toLowerCase(); const box=$('authCheckList'); box.replaceChildren();
+    if(!user){const e=document.createElement('div');e.className='empty';e.innerHTML='<strong>請選擇 Web 使用者</strong>選擇後即可編輯其系統帳號授權。';box.appendChild(e);setText('authSummary','請選擇要編輯的使用者。');return;}
+    const authMap=new Map(); state.datasets.auth.map(normalizeAuthRow).filter(x=>x.user===user).forEach(x=>authMap.set(x.account,x.enabled==='Y'));
+    const accounts=state.datasets.os.map(r=>r[1]).filter(a=>!q||a.toLowerCase().includes(q)); let enabledCount=0;
+    accounts.forEach(acct=>{const checked=authMap.get(acct)===true;if(checked)enabledCount++;const row=document.createElement('label');row.className='check-row';const cb=document.createElement('input');cb.type='checkbox';cb.dataset.account=acct;cb.checked=checked;const name=document.createElement('span');name.textContent=acct;row.append(cb,name);box.appendChild(row);});
+    setText('authSummary',`${user}：目前畫面 ${accounts.length} 個帳號，已授權 ${enabledCount} 個。`);
+  }
+  async function saveAuthorizations(){
+    try{const user=validateToken($('authUser').value,'Web 使用者');const checks=$$('#authCheckList input[type=checkbox]');if(!checks.length)throw new Error('沒有可儲存的系統帳號。');const payload=checks.map(cb=>`${user}|${cb.dataset.account}@${cb.checked?'Y':'N'}`).join(',');validateToken(payload,'授權資料',{allowPipe:true,allowComma:true});const lines=await request('gepSave',payload,`${user}@`,'1','1');state.datasets.auth=parseRows(lines,3);toast('授權已儲存',user,'success');await loadAuthorizations();$('authUser').value=user;renderAuth();}catch(e){toast('授權儲存失敗',e.message,'error',7000);}
+  }
+
+  async function loadPasswords(){
+    try{
+      const lines=await request('pms2Query','all','1','1','1');
+      if(lines.some(x=>/Binary file .* matches/i.test(x))) throw new Error('後端將解密資料判定為 binary；請更新 pmsGP_v2.1.sh。');
+      const rows=parseRows(lines,6).filter(r=>/^\d+$/.test(r[0]) && r.length>=6);
+      if(lines.length && !rows.length) throw new Error(`後端回應格式異常：${lines[0]}`);
+      state.datasets.passwords=rows;
+      renderPasswords();
+    }catch(e){
+      state.datasets.passwords=[];renderPasswords();
+      toast('密碼資料載入失敗',e.message,'error',8000);
+    }
+  }
+  function renderPasswords(){const rows=filterRows(state.datasets.passwords,$('passwordsSearch').value);renderTable('passwordsTbody','passwordsEmpty',rows,r=>[r[0],r[1],state.adminPasswordsMasked?maskSecret(r[2]):r[2],r[3],r[4],r[5]],{secretCols:[2]});}
+  function appendTerminal(line){const t=$('rotationTerminal');if(t.textContent.includes('等待執行...'))t.textContent='';const div=document.createElement('div');div.textContent=line;if(/\[OK\]|SUCCESS|done|All job is done/i.test(line))div.className='ok';else if(/FAIL|ERROR|Failed/i.test(line))div.className='bad';t.appendChild(div);t.scrollTop=t.scrollHeight;}
+  async function rotatePasswords(){
+    try{const accounts=validateToken($('rotationAccounts').value||'all','輪替帳號',{allowPipe:true});const ok=await confirmAction('執行主機密碼輪替',`即將對「${accounts}」執行 pmsSave。此操作會連線受管主機並修改系統帳號密碼。\n\n請確認目前主機連線、SSH 與備份狀態均正常。`,'開始執行');if(!ok)return;$('rotationTerminal').replaceChildren();$('rotationBtn').disabled=true;await request('pmsSave',accounts,'1','1','1',{timeout:20*60*1000,onLine:appendTerminal});toast('密碼輪替流程完成','請檢查終端輸出與稽核日誌。','success',7000);await loadPasswords();}catch(e){appendTerminal(`ERROR: ${e.message}`);toast('密碼輪替失敗',e.message,'error',8000);}finally{$('rotationBtn').disabled=false;}
+  }
+
+  async function loadSettings(){
+    try{const lines=await request('reloadQuery','1','1','1','1');const a=(lines[0]||'').split('|'); if(a.length<6)throw new Error(`reloadQuery 回應欄位不足：${lines[0]||'(empty)'}`);state.settings={pwdLen:a[0],expire:a[1],freq:a[2],hour:a[3],minute:a[4],seed:a[5]};$('cfgPwdLen').value=a[0];$('cfgExpire').value=a[1];$('cfgFreq').value=a[2];$('cfgHour').value=a[3];$('cfgMinute').value=a[4];$('cfgSeedCurrent').value=a[5];toast('設定已載入','','success');}catch(e){toast('設定載入失敗',e.message,'error');}
+  }
+  async function savePolicy(){try{const len=Number($('cfgPwdLen').value),exp=Number($('cfgExpire').value);if(!Number.isInteger(len)||len<8||len>64)throw new Error('密碼長度需為 8~64。');if(!Number.isInteger(exp)||exp<1||exp>3650)throw new Error('到期天數需為 1~3650。');await request('gerSave',String(len),'1','1','1');await request('gesSave',String(exp),'1','1','1');await loadSettings();toast('密碼政策已更新','','success');}catch(e){toast('儲存失敗',e.message,'error');}}
+  async function saveSchedule(){try{const freq=$('cfgFreq').value,h=Number($('cfgHour').value),m=Number($('cfgMinute').value),accounts=validateToken($('cfgAccounts').value||'all','輪替帳號',{allowPipe:true});if(!Number.isInteger(h)||h<0||h>23)throw new Error('Hour 必須為 0~23。');if(!Number.isInteger(m)||m<0||m>59)throw new Error('Minute 必須為 0~59。');await request('getSave',accounts,String(m),String(h),freq);await loadSettings();toast('排程已更新',`${freq} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`,'success');}catch(e){toast('排程儲存失敗',e.message,'error');}}
+  async function saveSeed(){try{const seed=validateToken($('cfgSeedNew').value,'新 Seed',{allowPipe:true,allowComma:true});if(seed.length<8)throw new Error('新 Seed 建議至少 8 個字元。');const ok=await confirmAction('更新加密 Seed',`此操作會先使用目前 Seed 解密 pms_file，再以新 Seed 重新加密。\n\n請確認 /ws/old 備份目錄可用，並避免同時間執行密碼輪替。`,'更新並重加密');if(!ok)return;await request('geuSave',seed,'1','1','1');$('cfgSeedNew').value='';await loadSettings();toast('加密 Seed 已更新','','success',7000);}catch(e){toast('Seed 更新失敗',e.message,'error',8000);}}
+
+  async function loadAudit(){
+    try{const u=validateToken($('auditUser').value||'@','查詢帳號',{allowEmpty:false});const from=$('auditFrom').value,to=$('auditTo').value;if(!from||!to)throw new Error('請選擇起訖日期。');state.datasets.audit=parseRows(await request('logQuery',u,dateForBackend(from),dateForBackend(to),'1'),6);renderAudit();}catch(e){toast('日誌查詢失敗',e.message,'error');}
+  }
+  function renderAudit(){const rows=filterRows(state.datasets.audit,$('auditSearch').value);renderTable('auditTbody','auditEmpty',rows,r=>[r[0],r[1],r[2],r[3],r[4],r[5]],{monoCols:[5]});}
+
+  function bind() {
+    $('connectBtn').onclick=connect; $('topConnectBtn').onclick=connect; $('disconnectBtn').onclick=()=>disconnect();
+    $('environment').onchange=()=>{ if(wsOpen()) setConnectionUi('connected', `連線設定已變更；目前連線仍是既有端點。按「重新連線」套用 ${currentWsUrl()}`); };
+    $('customWs').oninput=()=>{ if(wsOpen()) setConnectionUi('connected', `連線設定已變更；目前連線仍是既有端點。按「重新連線」套用 ${currentWsUrl()}`); };
+    $('loginBtn').onclick=login; $('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login();}); $('logoutBtn').onclick=logout; $('topLogoutBtn').onclick=logout;
+    $('vaultRefreshBtn').onclick=loadVault; $('vaultMaskBtn').onclick=()=>{state.vaultMasked=!state.vaultMasked;$('vaultMaskBtn').textContent=state.vaultMasked?'顯示密碼':'隱藏密碼';renderVault();}; $('changeLoginPassBtn').onclick=changeLoginPassword;
+    $('hostsRefreshBtn').onclick=loadHosts; $('hostsSearch').oninput=renderHosts; $('hostSaveBtn').onclick=saveHost; $('hostClearBtn').onclick=()=>{['hostIp','hostName'].forEach(x=>$(x).value='');$('hostOs').value='Linux';$('hostEnabled').value='Y';};
+    $('usersRefreshBtn').onclick=loadUsers; $('usersSearch').oninput=renderUsers; $('webUserSaveBtn').onclick=saveUser; $('webUserClearBtn').onclick=()=>{['webUserId','webUserPass'].forEach(x=>$(x).value='');$('webUserRole').value='USER';$('webUserEnabled').value='Y';};
+    $('osRefreshBtn').onclick=loadOs; $('osSearch').oninput=renderOs; $('osSaveBtn').onclick=saveOs; $('osClearBtn').onclick=()=>{['osAccount','osDesc'].forEach(x=>$(x).value='');$('osEnabled').value='Y';};
+    $('authRefreshBtn').onclick=loadAuthorizations; $('authUser').onchange=renderAuth; $('authSearch').oninput=renderAuth; $('authSaveBtn').onclick=saveAuthorizations;
+    $('passwordsRefreshBtn').onclick=loadPasswords; $('passwordsSearch').oninput=renderPasswords; $('passwordsMaskBtn').onclick=()=>{state.adminPasswordsMasked=!state.adminPasswordsMasked;$('passwordsMaskBtn').textContent=state.adminPasswordsMasked?'顯示密碼':'隱藏密碼';renderPasswords();renderUsers();}; $('rotationBtn').onclick=rotatePasswords;
+    $('settingsReloadBtn').onclick=loadSettings; $('cfgPolicySaveBtn').onclick=savePolicy; $('cfgScheduleSaveBtn').onclick=saveSchedule; $('cfgSeedSaveBtn').onclick=saveSeed;
+    $('auditRefreshBtn').onclick=loadAudit; $('auditSearch').oninput=renderAudit;
+    $('menuBtn').onclick=()=> $('sidebar').classList.toggle('open');
+    $$('.nav-btn').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+    $$('[data-toggle-password]').forEach(b=>b.onclick=()=>{const i=$(b.dataset.togglePassword);i.type=i.type==='password'?'text':'password';});
+    ['mousemove','mousedown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,resetIdle,{passive:true}));
+  }
+
+  function init() {
+    bind(); setConnectionUi('disconnected'); setIdentityUi();
+    const today=new Date(), ago=new Date(Date.now()-7*86400000); $('auditFrom').value=dateInputValue(ago); $('auditTo').value=dateInputValue(today);
+    setInterval(()=>setText('clock',nowText()),1000);setText('clock',nowText());
+    // Always start from the URL visible in this page. Do not silently override it
+    // with an older sessionStorage value from a previous connection.
+    setTimeout(connect,150);
+  }
+  init();
+})();
+</script>
+</body>
+</html>
