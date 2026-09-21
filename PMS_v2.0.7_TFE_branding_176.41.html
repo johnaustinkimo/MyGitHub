@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>PMS 主機密碼管理系統</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --surface-3: #eef3f8;
+      --text: #172033;
+      --muted: #667085;
+      --line: #dfe7f1;
+      --primary: #155eef;
+      --primary-strong: #004eeb;
+      --primary-soft: #edf4ff;
+      --success: #067647;
+      --success-soft: #ecfdf3;
+      --warning: #b54708;
+      --warning-soft: #fffaeb;
+      --danger: #b42318;
+      --danger-soft: #fef3f2;
+      --info: #175cd3;
+      --info-soft: #eff8ff;
+      --shadow: 0 12px 32px rgba(16, 24, 40, .08);
+      --radius: 16px;
+      --sidebar: 252px;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, "Noto Sans TC", "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(21, 94, 239, .09), transparent 30%),
+        radial-gradient(circle at 92% 5%, rgba(23, 92, 211, .07), transparent 28%),
+        var(--bg);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    .app { min-height: 100vh; display: grid; grid-template-columns: var(--sidebar) 1fr; }
+    .sidebar {
+      position: fixed; inset: 0 auto 0 0; width: var(--sidebar);
+      display: flex; flex-direction: column; gap: 18px;
+      padding: 22px 16px;
+      background: linear-gradient(180deg, #0b1730 0%, #101f3f 58%, #0c1831 100%);
+      color: #e6ecf5;
+      z-index: 20;
+      box-shadow: 6px 0 24px rgba(16, 24, 40, .12);
+    }
+    .brand { display: grid; gap: 10px; padding: 2px 8px 12px; }
+    .tfe-logo-wrap {
+      display: block; width: 100%; padding: 7px 8px; border-radius: 11px;
+      background: #fff; box-shadow: 0 8px 20px rgba(16, 24, 40, .18);
+    }
+    .tfe-logo { display: block; width: 100%; height: auto; object-fit: contain; }
+    .brand-product { display: flex; gap: 12px; align-items: center; }
+    .brand-mark {
+      width: 42px; height: 42px; border-radius: 13px; flex: 0 0 42px;
+      display: grid; place-items: center;
+      background: linear-gradient(145deg, #2e90fa, #155eef);
+      box-shadow: 0 8px 20px rgba(21, 94, 239, .34);
+      font-weight: 800; color: #fff; letter-spacing: -.5px;
+    }
+    .brand-title { font-size: 15px; font-weight: 750; color: #fff; line-height: 1.2; }
+    .brand-sub { margin-top: 4px; font-size: 11px; color: #98a8c2; letter-spacing: .04em; }
+
+    .nav-label { padding: 0 10px; margin: 3px 0 5px; color: #7f90ad; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
+    .nav { display: grid; gap: 5px; overflow-y: auto; padding-right: 2px; }
+    .nav-btn {
+      width: 100%; border: 0; color: #b9c5d8; background: transparent;
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 12px; border-radius: 11px; text-align: left;
+      transition: .18s ease; font-size: 14px;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .nav-btn.active { background: rgba(46, 144, 250, .18); color: #fff; box-shadow: inset 0 0 0 1px rgba(84,155,255,.18); }
+    .nav-btn.admin-only.locked { opacity: .38; cursor: not-allowed; }
+    .nav-icon { width: 20px; height: 20px; display: grid; place-items: center; font-size: 16px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.035); border-radius: 13px; }
+    .ws-mini { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #9fb0c8; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #667085; box-shadow: 0 0 0 4px rgba(102,112,133,.12); }
+    .dot.ok { background: #12b76a; box-shadow: 0 0 0 4px rgba(18,183,106,.12); }
+    .dot.busy { background: #f79009; box-shadow: 0 0 0 4px rgba(247,144,9,.12); }
+    .dot.bad { background: #f04438; box-shadow: 0 0 0 4px rgba(240,68,56,.12); }
+    .version { margin-top: 9px; color: #6f819f; font-size: 10px; }
+
+    .main { grid-column: 2; min-width: 0; padding: 20px 24px 36px; }
+    .topbar {
+      position: sticky; top: 0; z-index: 15;
+      margin: -20px -24px 20px; padding: 14px 24px;
+      display: flex; gap: 14px; align-items: center; justify-content: space-between;
+      background: rgba(244,247,251,.88); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(223,231,241,.75);
+    }
+    .page-title { font-size: 18px; font-weight: 760; letter-spacing: -.02em; }
+    .page-sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .clock { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; padding-right: 4px; }
+
+    .btn {
+      border: 1px solid var(--line); background: var(--surface); color: #344054;
+      min-height: 38px; padding: 8px 13px; border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      font-weight: 650; font-size: 13px; transition: .16s ease;
+      box-shadow: 0 1px 2px rgba(16,24,40,.03);
+    }
+    .btn:hover { border-color: #bdc9d9; transform: translateY(-1px); }
+    .btn:disabled { opacity: .46; cursor: not-allowed; transform: none; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn.primary:hover { background: var(--primary-strong); }
+    .btn.success { background: var(--success); border-color: var(--success); color: #fff; }
+    .btn.danger { background: #fff; border-color: #fda29b; color: var(--danger); }
+    .btn.soft { background: var(--surface-2); }
+    .btn.icon { width: 38px; padding: 0; }
+    .btn.sm { min-height: 32px; padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+
+    .view { display: none; animation: fade .18s ease; }
+    .view.active { display: block; }
+    @keyframes fade { from { opacity: .55; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+    .hero {
+      border: 1px solid rgba(198,212,232,.8); border-radius: 20px;
+      background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(248,251,255,.92));
+      box-shadow: var(--shadow); padding: 22px; margin-bottom: 18px;
+      display: grid; grid-template-columns: 1.25fr .75fr; gap: 20px; align-items: stretch;
+    }
+    .eyebrow { color: var(--primary); font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: .1em; }
+    .hero h1 { margin: 8px 0 8px; font-size: 27px; line-height: 1.2; letter-spacing: -.035em; }
+    .hero p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.75; max-width: 720px; }
+    .hero-status { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .metric { border: 1px solid var(--line); background: rgba(255,255,255,.72); border-radius: 13px; padding: 14px; }
+    .metric-k { color: var(--muted); font-size: 11px; }
+    .metric-v { margin-top: 7px; font-weight: 760; font-size: 14px; overflow-wrap: anywhere; }
+
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .card { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); box-shadow: 0 6px 22px rgba(16,24,40,.05); min-width: 0; }
+    .card-head { padding: 16px 18px 13px; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid #edf1f6; }
+    .card-title { font-weight: 750; font-size: 14px; }
+    .card-sub { margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .card-body { padding: 17px 18px; }
+    .card-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+    .status-banner { display: flex; align-items: center; gap: 10px; border-radius: 12px; padding: 11px 13px; font-size: 12px; border: 1px solid var(--line); background: var(--surface-2); }
+    .status-banner.ok { border-color: #abefc6; background: var(--success-soft); color: #05603a; }
+    .status-banner.warn { border-color: #fedf89; background: var(--warning-soft); color: #93370d; }
+    .status-banner.bad { border-color: #fecdca; background: var(--danger-soft); color: #912018; }
+
+    .field { display: grid; gap: 6px; margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { color: #344054; font-size: 11px; font-weight: 700; }
+    .control {
+      width: 100%; min-height: 40px; border: 1px solid #ced8e5; border-radius: 10px;
+      padding: 8px 11px; outline: none; background: #fff; color: var(--text); font-size: 13px;
+      transition: border .15s, box-shadow .15s;
+    }
+    .control:focus { border-color: #84adff; box-shadow: 0 0 0 3px rgba(21,94,239,.09); }
+    .control:disabled { background: #f2f4f7; color: #98a2b3; cursor: not-allowed; }
+    .password-wrap { position: relative; }
+    .password-wrap .control { padding-right: 44px; }
+    .password-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: #667085; padding: 6px; border-radius: 7px; }
+    .inline { display: flex; gap: 9px; align-items: center; }
+    .inline > .control { flex: 1; }
+    .help { color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 4px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 12px; }
+    .form-grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+
+    .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 4px 0 14px; }
+    .section-head h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+    .section-head p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .search { position: relative; min-width: 220px; flex: 1; max-width: 420px; }
+    .search input { padding-left: 34px; }
+    .search::before { content: "⌕"; position: absolute; left: 12px; top: 9px; color: #98a2b3; z-index: 1; font-size: 16px; }
+
+    .table-wrap { overflow: auto; max-height: 61vh; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+    thead th { position: sticky; top: 0; z-index: 2; text-align: left; background: #f8fafc; color: #475467; font-size: 10px; text-transform: uppercase; letter-spacing: .045em; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    tbody td { padding: 10px 12px; border-bottom: 1px solid #edf1f6; vertical-align: middle; white-space: nowrap; }
+    tbody tr:hover td { background: #fafcff; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+    .secret { letter-spacing: .08em; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 750; white-space: nowrap; }
+    .badge.ok { background: var(--success-soft); color: var(--success); }
+    .badge.bad { background: var(--danger-soft); color: var(--danger); }
+    .badge.info { background: var(--primary-soft); color: var(--info); }
+    .badge.neutral { background: #f2f4f7; color: #475467; }
+    .empty { text-align: center; padding: 38px 18px; color: var(--muted); }
+    .empty strong { display: block; color: #344054; margin-bottom: 5px; }
+
+    .kv-list { display: grid; gap: 10px; }
+    .kv { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid #edf1f6; font-size: 12px; }
+    .kv:last-child { border-bottom: 0; }
+    .kv .k { color: var(--muted); }
+    .kv .v { font-weight: 700; text-align: right; }
+
+    .terminal { background: #0b1220; color: #d6e1f0; border-radius: 13px; min-height: 220px; max-height: 430px; overflow: auto; padding: 14px; font: 11px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .terminal .dim { color: #71839f; }
+    .terminal .ok { color: #75e0a7; }
+    .terminal .bad { color: #f97066; }
+
+    .auth-grid { display: grid; grid-template-columns: minmax(220px,.65fr) minmax(0,1.35fr); gap: 16px; }
+    .check-list { max-height: 520px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+    .check-row { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-bottom: 1px solid #edf1f6; font-size: 12px; }
+    .check-row:last-child { border-bottom: 0; }
+    .check-row:hover { background: #fafcff; }
+    .check-row input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+    .login-shell { max-width: 780px; margin: 42px auto; }
+    .login-card { display: grid; grid-template-columns: .92fr 1.08fr; overflow: hidden; }
+    .login-aside { padding: 28px; color: #fff; background: linear-gradient(150deg, #102a56, #155eef); min-height: 390px; display: flex; flex-direction: column; justify-content: space-between; }
+    .login-aside h2 { margin: 0 0 10px; font-size: 24px; }
+    .login-aside p { margin: 0; color: #d1e0ff; font-size: 12px; line-height: 1.8; }
+    .login-main { padding: 28px; }
+    .login-main h3 { margin: 0 0 5px; font-size: 18px; }
+    .login-main > p { margin: 0 0 19px; color: var(--muted); font-size: 11px; }
+
+    .toast-stack { position: fixed; right: 20px; bottom: 20px; z-index: 80; display: grid; gap: 8px; width: min(390px, calc(100vw - 32px)); }
+    .toast { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 40px rgba(16,24,40,.16); padding: 12px 13px; animation: toastIn .2s ease; }
+    .toast .t-title { font-size: 12px; font-weight: 750; }
+    .toast .t-msg { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .toast .t-close { border: 0; background: transparent; color: #98a2b3; padding: 0 2px; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity:1; transform:none; } }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; padding: 20px; background: rgba(11,18,32,.46); backdrop-filter: blur(3px); }
+    .modal-backdrop.open { display: grid; }
+    .modal { width: min(520px,100%); background: #fff; border-radius: 16px; box-shadow: 0 22px 60px rgba(16,24,40,.28); overflow: hidden; }
+    .modal-head { padding: 18px 20px 12px; font-weight: 800; }
+    .modal-body { padding: 0 20px 18px; color: var(--muted); font-size: 12px; line-height: 1.7; white-space: pre-line; }
+    .modal-actions { padding: 14px 20px; display: flex; justify-content: flex-end; gap: 8px; background: #f8fafc; border-top: 1px solid var(--line); }
+
+    .site-footer {
+      margin-top: 24px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px;
+      background: rgba(255,255,255,.82); box-shadow: 0 4px 16px rgba(16,24,40,.04);
+      color: var(--muted); font-size: 11px; line-height: 1.75; text-align: center;
+    }
+    .site-footer-title { color: #344054; font-weight: 760; font-size: 12px; margin-bottom: 3px; }
+    .site-footer a { color: var(--primary); font-weight: 700; text-decoration: none; }
+    .site-footer a:hover { text-decoration: underline; }
+
+    .mobile-menu { display: none; }
+    @media (max-width: 980px) {
+      :root { --sidebar: 220px; }
+      .hero { grid-template-columns: 1fr; }
+      .grid.three { grid-template-columns: 1fr 1fr; }
+      .auth-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .app { display: block; }
+      .sidebar { transform: translateX(-105%); transition: .2s ease; width: 250px; }
+      .sidebar.open { transform: translateX(0); }
+      .main { padding: 14px; }
+      .topbar { margin: -14px -14px 16px; padding: 12px 14px; }
+      .mobile-menu { display: inline-flex; }
+      .clock { display: none; }
+      .grid.two, .grid.three, .form-grid, .form-grid.three, .login-card { grid-template-columns: 1fr; }
+      .login-aside { min-height: auto; }
+      .login-shell { margin: 12px auto; }
+      .hero h1 { font-size: 23px; }
+      .table-wrap { max-height: 55vh; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="tfe-logo-wrap">
+        <img class="tfe-logo" src="data:image/png;base64,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" alt="臺灣期貨交易所 Taiwan Futures Exchange">
+      </div>
+      <div class="brand-product">
+        <div class="brand-mark">PMS</div>
+        <div>
+          <div class="brand-title">主機密碼管理系統</div>
+          <div class="brand-sub">PASSWORD MANAGEMENT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-label">Workspace</div>
+    <nav class="nav" id="nav">
+      <button class="nav-btn active" data-view="overview"><span class="nav-icon">⌂</span><span>總覽</span></button>
+      <button class="nav-btn" data-view="vault"><span class="nav-icon">◈</span><span>密碼領用</span></button>
+      <button class="nav-btn admin-only locked" data-view="hosts"><span class="nav-icon">▣</span><span>主機清單</span></button>
+      <button class="nav-btn admin-only locked" data-view="webusers"><span class="nav-icon">◎</span><span>Web 使用者</span></button>
+      <button class="nav-btn admin-only locked" data-view="osaccounts"><span class="nav-icon">⌘</span><span>系統帳號</span></button>
+      <button class="nav-btn admin-only locked" data-view="authorizations"><span class="nav-icon">✓</span><span>授權對應</span></button>
+      <button class="nav-btn admin-only locked" data-view="passwords"><span class="nav-icon">◆</span><span>密碼資料</span></button>
+      <button class="nav-btn admin-only locked" data-view="settings"><span class="nav-icon">⚙</span><span>系統設定</span></button>
+      <button class="nav-btn admin-only locked" data-view="audit"><span class="nav-icon">≡</span><span>稽核日誌</span></button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="ws-mini"><span class="dot" id="wsDot"></span><span id="wsMiniText">Disconnected</span></div>
+      <div class="version">Password Management System · v2.0.7</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="inline">
+        <button class="btn icon mobile-menu" id="menuBtn" aria-label="menu">☰</button>
+        <div>
+          <div class="page-title" id="pageTitle">系統總覽</div>
+          <div class="page-sub" id="pageSub">連線、登入與服務狀態</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="clock" id="clock"></span>
+        <span class="badge neutral" id="identityBadge">Guest</span>
+        <button class="btn sm" id="topConnectBtn">重新連線</button>
+        <button class="btn sm danger" id="topLogoutBtn" disabled>登出</button>
+      </div>
+    </header>
+
+    <section class="view active" id="view-overview">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Secure Operations Console</div>
+          <h1>集中管理主機、帳號、授權與密碼輪替</h1>
+          <p>請先連線並登入。系統將依您的帳號權限顯示可使用的功能。</p>
+          <div style="margin-top:15px" id="overviewBanner" class="status-banner">尚未連線。</div>
+        </div>
+        <div class="hero-status">
+          <div class="metric"><div class="metric-k">WebSocket</div><div class="metric-v" id="metricWs">Disconnected</div></div>
+          <div class="metric"><div class="metric-k">Environment</div><div class="metric-v" id="metricEnv">-</div></div>
+          <div class="metric"><div class="metric-k">Session</div><div class="metric-v" id="metricSession">Guest</div></div>
+          <div class="metric"><div class="metric-k">Last response</div><div class="metric-v" id="metricLast">-</div></div>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <article class="card">
+          <div class="card-head"><div><div class="card-title">連線設定</div><div class="card-sub">選擇 系統 環境並建立連線</div></div><span class="badge neutral" id="connectionBadge">Offline</span></div>
+          <div class="card-body">
+            <div class="field"><label for="environment">系統環境</label><select id="environment" class="control"><option value="ws://192.168.176.41:1111/" selected>期貨商測試環境</option></select></div>
+            <div class="field"><label for="customWs">WebSocket URL（可選）</label><input id="customWs" class="control mono" type="text" placeholder="ws://192.168.176.41:1111/ or 192.168.176.41:1111"><div class="help">留白時使用上方選單。正式環境建議經 TLS reverse proxy 改用 wss://。</div></div>
+            <div class="inline"><button class="btn primary" id="connectBtn">連線</button><button class="btn" id="disconnectBtn" disabled>中斷</button></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><div class="card-title">使用者登入</div><div class="card-sub">使用既有 gen_file 認證流程</div></div><span class="badge neutral" id="loginBadge">Guest</span></div>
+          <div class="card-body">
+            <div class="field"><label for="loginUser">帳號</label><input id="loginUser" class="control" autocomplete="username" placeholder="例如 109101"></div>
+            <div class="field"><label for="loginPass">密碼</label><div class="password-wrap"><input id="loginPass" class="control" type="password" autocomplete="current-password" placeholder="輸入登入密碼"><button class="password-toggle" data-toggle-password="loginPass" type="button">◉</button></div></div>
+            <div class="inline"><button class="btn primary" id="loginBtn" disabled>登入</button><button class="btn" id="logoutBtn" disabled>清除登入</button></div>
+            <div class="help" id="loginHint">請先建立 WebSocket 連線。</div>
+          </div>
+        </article>
+      </div>
+
+      <div class="grid three" style="margin-top:16px">
+        <article class="card"><div class="card-body"><div class="metric-k">資料傳輸模式</div><div class="metric-v">Text / EOF framed</div><div class="help">每個命令收集到 EOF 才完成。</div></div></article>
+        <article class="card"><div class="card-body"><div class="metric-k">資料渲染</div><div class="metric-v">DOM text only</div><div class="help">後端欄位阻擋 SQL injection 注入。</div></div></article>
+        <article class="card"><div class="card-body"><div class="metric-k">閒置保護</div><div class="metric-v">30 minutes</div><div class="help">閒置後自動清除登入狀態。</div></div></article>
+      </div>
+
+      <article class="card" id="changeLoginPasswordCard" style="margin-top:16px" hidden>
+        <div class="card-head">
+          <div>
+            <div class="card-title">修改 Web 登入密碼</div>
+            <div class="card-sub">偵測到目前登入密碼已過期，請先更新 gen_file 中的 Web 登入密碼。</div>
+          </div>
+          <span class="badge bad">密碼已過期</span>
+        </div>
+        <div class="card-body">
+          <div class="status-banner bad" style="margin-bottom:14px">目前密碼已過期。完成更新後會清除登入狀態，請使用新密碼重新登入。</div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="newLoginPass">新密碼</label>
+              <div class="password-wrap"><input id="newLoginPass" class="control" type="password" autocomplete="new-password" placeholder="至少 5 個字元"><button class="password-toggle" data-toggle-password="newLoginPass" type="button">◉</button></div>
+            </div>
+            <div class="field"><label for="confirmLoginPass">再次輸入</label><input id="confirmLoginPass" class="control" type="password" autocomplete="new-password"></div>
+          </div>
+          <button class="btn primary" id="changeLoginPassBtn" disabled>更新登入密碼</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="view" id="view-vault">
+      <div class="section-head"><div><h2>密碼領用</h2><p>查詢目前登入帳號已授權的系統帳密。</p></div><div class="toolbar"><button class="btn" id="vaultRefreshBtn">重新查詢</button><button class="btn" id="vaultMaskBtn">顯示密碼</button></div></div>
+      <div class="grid">
+        <article class="card">
+          <div class="card-head"><div><div class="card-title">授權帳密</div><div class="card-sub" id="vaultSummary">登入後可查詢。</div></div></div>
+          <div class="table-wrap"><table><thead><tr><th>#</th><th>主機帳號</th><th>密碼</th><th>最近修改</th></tr></thead><tbody id="vaultTbody"></tbody></table><div class="empty" id="vaultEmpty"><strong>尚無資料</strong>請先登入並執行查詢。</div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="view" id="view-hosts">
+      <div class="section-head"><div><h2>主機清單</h2><p>管理 gem_file：IP、主機名稱、OS 類型與啟用狀態。</p></div><div class="toolbar"><div class="search"><input id="hostsSearch" class="control" placeholder="搜尋 IP / hostname / OS"></div><button class="btn" id="hostsRefreshBtn">重新整理</button></div></div>
+      <div class="grid two" style="grid-template-columns:minmax(0,1.5fr) minmax(320px,.5fr)">
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>IP</th><th>Hostname</th><th>OS</th><th>狀態</th><th>更新時間</th><th></th></tr></thead><tbody id="hostsTbody"></tbody></table><div class="empty" id="hostsEmpty"><strong>尚無資料</strong>按「重新整理」載入 gem_file。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">新增 / 修改主機</div><div class="card-sub">相同 IP 會更新既有紀錄。</div></div></div><div class="card-body">
+          <div class="field"><label>IP Address</label><input id="hostIp" class="control mono" placeholder="192.168.1.10"></div>
+          <div class="field"><label>Hostname</label><input id="hostName" class="control" placeholder="server01"></div>
+          <div class="field"><label>Operating System</label><select id="hostOs" class="control"><option>Linux</option><option>AIX</option><option>SunOS</option></select></div>
+          <div class="field"><label>狀態</label><select id="hostEnabled" class="control"><option value="Y">啟用</option><option value="N">停用</option></select></div>
+          <div class="inline"><button class="btn primary" id="hostSaveBtn">儲存</button><button class="btn" id="hostClearBtn">清除</button></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-webusers">
+      <div class="section-head"><div><h2>Web 使用者</h2><p>管理 gen_file：登入帳號、密碼、角色與啟用狀態。</p></div><div class="toolbar"><div class="search"><input id="usersSearch" class="control" placeholder="搜尋帳號 / role"></div><button class="btn" id="usersRefreshBtn">重新整理</button></div></div>
+      <div class="grid two" style="grid-template-columns:minmax(0,1.5fr) minmax(320px,.5fr)">
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>帳號</th><th>密碼</th><th>角色</th><th>狀態</th><th>更新時間</th><th></th></tr></thead><tbody id="usersTbody"></tbody></table><div class="empty" id="usersEmpty"><strong>尚無資料</strong>按「重新整理」載入 gen_file。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">新增 / 修改使用者</div><div class="card-sub">管理 PMS Web 登入身份。</div></div></div><div class="card-body">
+          <div class="field"><label>登入帳號</label><input id="webUserId" class="control" placeholder="109101"></div>
+          <div class="field"><label>登入密碼</label><div class="password-wrap"><input id="webUserPass" class="control" type="password"><button class="password-toggle" data-toggle-password="webUserPass" type="button">◉</button></div></div>
+          <div class="field"><label>角色</label><select id="webUserRole" class="control"><option value="USER">USER</option><option value="ADMIN">ADMIN</option><option value="ADMINA">ADMINA</option><option value="ADMINB">ADMINB</option><option value="GOD">GOD</option></select></div>
+          <div class="field"><label>狀態</label><select id="webUserEnabled" class="control"><option value="Y">啟用</option><option value="N">停用</option></select></div>
+          <div class="inline"><button class="btn primary" id="webUserSaveBtn">儲存</button><button class="btn" id="webUserClearBtn">清除</button></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-osaccounts">
+      <div class="section-head"><div><h2>系統帳號</h2><p>管理 geo_file：受 PMS 管理的作業系統帳號。</p></div><div class="toolbar"><div class="search"><input id="osSearch" class="control" placeholder="搜尋帳號 / 說明"></div><button class="btn" id="osRefreshBtn">重新整理</button></div></div>
+      <div class="grid two" style="grid-template-columns:minmax(0,1.5fr) minmax(320px,.5fr)">
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>系統帳號</th><th>說明</th><th>狀態</th><th>更新時間</th><th></th></tr></thead><tbody id="osTbody"></tbody></table><div class="empty" id="osEmpty"><strong>尚無資料</strong>按「重新整理」載入 geo_file。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">新增 / 修改系統帳號</div><div class="card-sub">相同帳號會更新既有紀錄。</div></div></div><div class="card-body">
+          <div class="field"><label>Account</label><input id="osAccount" class="control" placeholder="op1"></div>
+          <div class="field"><label>說明</label><input id="osDesc" class="control" placeholder="operator"></div>
+          <div class="field"><label>狀態</label><select id="osEnabled" class="control"><option value="Y">啟用</option><option value="N">停用</option></select></div>
+          <div class="inline"><button class="btn primary" id="osSaveBtn">儲存</button><button class="btn" id="osClearBtn">清除</button></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-authorizations">
+      <div class="section-head"><div><h2>授權對應</h2><p>管理 gep_file：Web 使用者可領用哪些系統帳號。</p></div><div class="toolbar"><button class="btn" id="authRefreshBtn">重新載入</button><button class="btn primary" id="authSaveBtn">儲存授權</button></div></div>
+      <div class="auth-grid">
+        <article class="card"><div class="card-head"><div><div class="card-title">Web 使用者</div><div class="card-sub">選擇要編輯授權的帳號。</div></div></div><div class="card-body"><div class="field"><label>使用者</label><select id="authUser" class="control"><option value="">請先載入</option></select></div><div class="status-banner" id="authSummary">尚未載入授權資料。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">系統帳號授權</div><div class="card-sub">勾選 = Y；未勾選 = N。儲存時會以既有 gepSave 格式送出。</div></div><div class="search"><input id="authSearch" class="control" placeholder="搜尋系統帳號"></div></div><div class="card-body"><div class="check-list" id="authCheckList"><div class="empty"><strong>尚無資料</strong>請先重新載入。</div></div></div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-passwords">
+      <div class="section-head"><div><h2>密碼資料</h2><p>查詢 pms_file 解密結果並執行既有密碼輪替流程。</p></div><div class="toolbar"><div class="search"><input id="passwordsSearch" class="control" placeholder="搜尋系統帳號"></div><button class="btn" id="passwordsRefreshBtn">重新整理</button><button class="btn" id="passwordsMaskBtn">顯示密碼</button></div></div>
+      <div class="grid two" style="grid-template-columns:minmax(0,1.4fr) minmax(340px,.6fr)">
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>帳號</th><th>密碼</th><th>Prefix</th><th>Suffix</th><th>修改時間</th></tr></thead><tbody id="passwordsTbody"></tbody></table><div class="empty" id="passwordsEmpty"><strong>尚無資料</strong>按「重新整理」載入 pms_file。</div></div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">執行密碼輪替</div><div class="card-sub">呼叫既有 pmsSave 流程；可能需要較長時間。</div></div></div><div class="card-body">
+          <div class="field"><label>目標帳號</label><input id="rotationAccounts" class="control" placeholder="all 或 op1|op2"><div class="help">`all` = 所有啟用帳號；多個帳號使用 | 分隔。</div></div>
+          <button class="btn danger" id="rotationBtn">執行密碼輪替</button>
+          <div class="help">執行前會要求再次確認。進度會即時顯示於下方終端。</div>
+          <div class="terminal" id="rotationTerminal" style="margin-top:14px"><span class="dim">等待執行...</span></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-settings">
+      <div class="section-head"><div><h2>系統設定</h2><p>管理 ger_file、ges_file、get_file、geu_file；geq_file 目前僅顯示狀態。</p></div><div class="toolbar"><button class="btn" id="settingsReloadBtn">重新載入設定</button></div></div>
+      <div class="grid two">
+        <article class="card"><div class="card-head"><div><div class="card-title">密碼政策</div><div class="card-sub">ger_file / ges_file</div></div></div><div class="card-body">
+          <div class="field"><label>隨機密碼長度</label><input id="cfgPwdLen" class="control" type="number" min="8" max="64"></div>
+          <div class="field"><label>Web 登入密碼到期天數</label><input id="cfgExpire" class="control" type="number" min="1" max="3650"></div>
+          <button class="btn primary" id="cfgPolicySaveBtn">儲存密碼政策</button>
+        </div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">自動輪替排程</div><div class="card-sub">get_file / root crontab</div></div></div><div class="card-body">
+          <div class="field"><label>週期</label><select id="cfgFreq" class="control"><option value="DAILY">DAILY</option><option value="WEEKLY">WEEKLY</option><option value="MONTHLY">MONTHLY</option><option value="HOURLY">HOURLY</option></select></div>
+          <div class="form-grid"><div class="field"><label>Hour</label><input id="cfgHour" class="control" type="number" min="0" max="23"></div><div class="field"><label>Minute</label><input id="cfgMinute" class="control" type="number" min="0" max="59"></div></div>
+          <div class="field"><label>輪替帳號</label><input id="cfgAccounts" class="control" value="all" placeholder="all 或 op1|op2"></div>
+          <button class="btn primary" id="cfgScheduleSaveBtn">儲存排程</button>
+        </div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">加密 Seed</div><div class="card-sub">geu_file；更新時會重新加密 pms_file。</div></div><span class="badge bad">敏感操作</span></div><div class="card-body">
+          <div class="field"><label>目前 Seed</label><input id="cfgSeedCurrent" class="control mono" type="password" disabled></div>
+          <div class="field"><label>新 Seed</label><input id="cfgSeedNew" class="control mono" type="password" placeholder="輸入新的 OpenSSL passphrase"></div>
+          <button class="btn danger" id="cfgSeedSaveBtn">更新 Seed 並重加密</button>
+        </div></article>
+        <article class="card"><div class="card-head"><div><div class="card-title">功能權限表</div><div class="card-sub">geq_file</div></div><span class="badge neutral">Read-only</span></div><div class="card-body">
+          <div class="status-banner warn">目前上傳的 pmsGP.sh 中 geqQuery / geqSave handler 為註解狀態，因此 v2 不會送出修改命令，避免產生假成功。</div>
+          <div class="help" style="margin-top:10px">若要啟用角色功能權限，建議下一版把 geqQuery / geqSave 重新加入後端，並由後端實際套用權限，而不只是維護文字檔。</div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-audit">
+      <div class="section-head"><div><h2>稽核日誌</h2><p>查詢 log_file，可依登入帳號與日期區間篩選。</p></div><div class="toolbar"><button class="btn" id="auditRefreshBtn">查詢</button></div></div>
+      <article class="card">
+        <div class="card-head"><div class="toolbar" style="width:100%"><input id="auditUser" class="control" style="max-width:220px" placeholder="帳號；留白=全部"><input id="auditFrom" class="control" style="max-width:170px" type="date"><input id="auditTo" class="control" style="max-width:170px" type="date"><div class="search"><input id="auditSearch" class="control" placeholder="搜尋 mode / type / message"></div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>User</th><th>Mode</th><th>Type</th><th>Message</th><th>Timestamp</th></tr></thead><tbody id="auditTbody"></tbody></table><div class="empty" id="auditEmpty"><strong>尚無資料</strong>設定日期範圍後查詢 log_file。</div></div>
+      </article>
+    </section>
+
+    <footer class="site-footer" aria-label="臺灣期貨交易所聯絡資訊">
+      <div class="site-footer-title">© 2026 臺灣期貨交易所 Taiwan Futures Exchange</div>
+      <div>地址：100 臺北市羅斯福路二段100號14樓</div>
+      <div>服務專線：0800-075-566&nbsp;&nbsp; (02)2369-5678（手機請撥付費電話）</div>
+      <div><a href="https://www.taifex.com.tw/PO" target="_blank" rel="noopener noreferrer" title="服務信箱（另開新視窗）">服務信箱</a>&nbsp;&nbsp;｜&nbsp;&nbsp;Fax: (02)2365-7272</div>
+    </footer>
+  </main>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head" id="modalTitle">確認操作</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions"><button class="btn" id="modalCancel">取消</button><button class="btn primary" id="modalConfirm">確認</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const APP_VERSION = '2.0.7';
+  const IDLE_MS = 30 * 60 * 1000;
+  const ADMIN_ROLES = new Set(['ADMIN', 'ADMINA', 'ADMINB', 'GOD']);
+  const FORBIDDEN_BASIC = /[\r\n\t;&`$<>\\]/;
+  const state = {
+    ws: null,
+    wsState: 'disconnected',
+    queue: [],
+    active: null,
+    user: '',
+    password: '',
+    role: '',
+    auth: 'USER',
+    loggedIn: false,
+    passwordExpired: false,
+    debugUiMode: false,
+    vaultMasked: true,
+    adminPasswordsMasked: true,
+    datasets: { vault: [], hosts: [], users: [], os: [], auth: [], passwords: [], audit: [] },
+    idleTimer: null,
+    lastResponseAt: null,
+    settings: { pwdLen: '', expire: '', freq: '', hour: '', minute: '', seed: '' }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  const viewMeta = {
+    overview: ['系統總覽', '連線、登入與服務狀態'],
+    vault: ['密碼領用', '查詢目前登入帳號可領用的帳密'],
+    hosts: ['主機清單', 'gem_file 主機與 OS 管理'],
+    webusers: ['Web 使用者', 'gen_file 登入身份管理'],
+    osaccounts: ['系統帳號', 'geo_file 系統帳號管理'],
+    authorizations: ['授權對應', 'gep_file 使用者與系統帳號授權'],
+    passwords: ['密碼資料', 'pms_file 密碼查詢與輪替'],
+    settings: ['系統設定', '密碼政策、排程與加密設定'],
+    audit: ['稽核日誌', 'log_file 操作歷程查詢']
+  };
+
+  function nowText() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function dateInputValue(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+  function dateForBackend(v) { return (v || '').replaceAll('-', '/'); }
+  function isAdmin() { return ADMIN_ROLES.has(state.role); }
+  function canViewAdminUi() { return isAdmin() || state.debugUiMode; }
+  function wsOpen() { return state.ws && state.ws.readyState === WebSocket.OPEN; }
+  function clean(v) { return String(v ?? '').trim(); }
+  function maskSecret(v) { return v ? '••••••••••' : ''; }
+  function setText(id, value) { const el = $(id); if (el) el.textContent = value; }
+  function setVisible(id, show) { const el = $(id); if (el) el.hidden = !show; }
+
+  function validateToken(value, label, opts = {}) {
+    const v = clean(value);
+    if (!v && !opts.allowEmpty) throw new Error(`${label}不可空白。`);
+    if (/\s/.test(v)) throw new Error(`${label}不可包含空白字元。`);
+    if (FORBIDDEN_BASIC.test(v)) throw new Error(`${label}包含不允許的 shell 控制字元。`);
+    if (!opts.allowPipe && v.includes('|')) throw new Error(`${label}不可包含 |。`);
+    if (!opts.allowComma && v.includes(',')) throw new Error(`${label}不可包含 ,。`);
+    return v;
+  }
+  function validateNewPassword(value) {
+    const v=clean(value);
+    if(v.length<5||v.length>128) throw new Error('新密碼長度需為 5~128 個字元。');
+    if(!/^[A-Za-z0-9@._%+=:!#^-]+$/.test(v)) throw new Error('新密碼僅可使用英數字及 @ . _ % + = : ! # ^ -。');
+    return v;
+  }
+  function validateIp(v) {
+    v = validateToken(v, 'IP Address');
+    const parts = v.split('.');
+    if (parts.length !== 4 || parts.some(x => !/^\d{1,3}$/.test(x) || Number(x) > 255)) throw new Error('IP Address 格式不正確。');
+    return v;
+  }
+
+  function toast(title, message = '', type = 'info', ttl = 4500) {
+    const box = document.createElement('div'); box.className = 'toast';
+    const icon = document.createElement('span'); icon.className = `badge ${type === 'error' ? 'bad' : type === 'success' ? 'ok' : 'info'}`; icon.textContent = type === 'error' ? '!' : type === 'success' ? '✓' : 'i';
+    const body = document.createElement('div');
+    const t = document.createElement('div'); t.className = 't-title'; t.textContent = title;
+    const m = document.createElement('div'); m.className = 't-msg'; m.textContent = message;
+    body.append(t, m);
+    const close = document.createElement('button'); close.className = 't-close'; close.textContent = '×'; close.onclick = () => box.remove();
+    box.append(icon, body, close); $('toastStack').appendChild(box);
+    if (ttl) setTimeout(() => box.remove(), ttl);
+  }
+
+  function confirmAction(title, body, confirmLabel = '確認') {
+    return new Promise(resolve => {
+      $('modalTitle').textContent = title; $('modalBody').textContent = body; $('modalConfirm').textContent = confirmLabel;
+      $('modalBackdrop').classList.add('open');
+      const done = val => { $('modalBackdrop').classList.remove('open'); $('modalConfirm').onclick = null; $('modalCancel').onclick = null; resolve(val); };
+      $('modalConfirm').onclick = () => done(true); $('modalCancel').onclick = () => done(false);
+    });
+  }
+
+  function setConnectionUi(mode, detail = '') {
+    state.wsState = mode;
+    const dot = $('wsDot'), badge = $('connectionBadge');
+    dot.className = 'dot';
+
+    if (mode === 'connected') {
+      dot.classList.add('ok');
+      badge.className = 'badge ok';
+      badge.textContent = 'Online';
+      setText('wsMiniText', 'Connected');
+      setText('metricWs', 'Connected');
+    } else if (mode === 'connecting') {
+      dot.classList.add('busy');
+      badge.className = 'badge info';
+      badge.textContent = 'Connecting';
+      setText('wsMiniText', 'Connecting');
+      setText('metricWs', 'Connecting');
+    } else if (mode === 'error') {
+      dot.classList.add('bad');
+      badge.className = 'badge bad';
+      badge.textContent = 'Error';
+      setText('wsMiniText', 'Error');
+      setText('metricWs', 'Error');
+    } else {
+      badge.className = 'badge neutral';
+      badge.textContent = 'Offline';
+      setText('wsMiniText', 'Disconnected');
+      setText('metricWs', 'Disconnected');
+    }
+
+    $('connectBtn').disabled = mode === 'connecting';
+    $('connectBtn').textContent = mode === 'connected' ? '重新連線' : '連線';
+    $('disconnectBtn').disabled = !['connected', 'error'].includes(mode);
+    $('loginBtn').disabled = mode !== 'connected';
+
+    $('overviewBanner').className =
+      `status-banner ${mode === 'connected' ? 'ok' : mode === 'error' ? 'bad' : mode === 'connecting' ? 'warn' : ''}`;
+
+    $('overviewBanner').textContent = detail ||
+      (mode === 'connected'
+        ? 'WebSocket 已連線，可進行登入。'
+        : mode === 'connecting'
+          ? '正在建立 WebSocket 連線...'
+          : mode === 'error'
+            ? 'WebSocket 連線發生錯誤。'
+            : 'WebSocket 尚未連線。');
+
+    $('topConnectBtn').textContent = mode === 'connected' ? '重新連線' : '連線';
+    $('topConnectBtn').disabled = mode === 'connecting';
+    $('loginHint').textContent =
+      mode === 'connected' ? '連線已建立，請輸入 PMS 帳號密碼。' : '請先建立 WebSocket 連線。';
+  }
+
+  function setIdentityUi() {
+    const baseWho = state.loggedIn ? `${state.user} · ${state.role}` : 'Guest';
+    const who = state.debugUiMode ? `${baseWho} · DEBUG UI` : baseWho;
+    if (state.debugUiMode) {
+      state.user='admin'; state.password='9hJeF23z'; state.role='ADMIN'; state.auth='ADMIN'; 
+      state.loggedIn=true; state.passwordExpired=false; updateExpiredPasswordUi(); resetIdle();
+      state.vaultMasked = false;
+      $('vaultMaskBtn').textContent = '隱藏密碼';
+      toast('登入成功', `${state.user} (${state.role})`, 'success');
+      setText('loginHint', `登入成功：${state.user} / ${state.role}`);
+      loadVault();
+      showView('vault');
+    } 
+    setText('identityBadge', who); setText('metricSession', who); setText('loginBadge', state.loggedIn ? state.role : 'Guest');
+    $('identityBadge').className = `badge ${state.debugUiMode ? 'bad' : state.loggedIn ? (isAdmin() ? 'info' : 'ok') : 'neutral'}`;
+    $('loginBadge').className = $('identityBadge').className;
+    $('topLogoutBtn').disabled = !state.loggedIn; $('logoutBtn').disabled = !state.loggedIn; $('changeLoginPassBtn').disabled = !state.loggedIn;
+    $$('.admin-only').forEach(el => el.classList.toggle('locked', !canViewAdminUi()));
+  }
+
+  function normalizeWsUrl(raw) {
+    let url = clean(raw);
+    if (!url) return '';
+    // Accept convenient host:port input as well as a complete ws:// / wss:// URL.
+    if (!/^wss?:\/\//i.test(url)) url = 'ws://' + url;
+    return url;
+  }
+  function currentWsUrl() { return normalizeWsUrl(clean($('customWs').value) || $('environment').value); }
+  function connect() {
+    disconnect(false);
+    clearSession(false);
+
+    const url = currentWsUrl();
+    if (!/^wss?:\/\//i.test(url)) {
+      setConnectionUi('error', `WebSocket URL 格式不正確：${url || '(empty)'}`);
+      toast('連線失敗', 'WebSocket URL 格式不正確。', 'error');
+      return;
+    }
+
+    // A normal HTTPS page cannot reliably open an insecure ws:// endpoint.
+    if (location.protocol === 'https:' && /^ws:\/\//i.test(url)) {
+      const msg = `目前頁面為 HTTPS，但 WebSocket 使用 ${url}。瀏覽器會阻擋 mixed content；請改用 wss://。`;
+      console.error('[PMS WebSocket]', msg);
+      setText('metricEnv', url);
+      setConnectionUi('error', msg);
+      toast('瀏覽器阻擋 WebSocket', 'HTTPS 頁面必須搭配 wss://。', 'error', 9000);
+      return;
+    }
+
+    let opened = false;
+    let hadError = false;
+    setText('metricEnv', url);
+    setConnectionUi('connecting', `正在連線 ${url}`);
+
+    try {
+      state.ws = new WebSocket(url);
+    } catch (e) {
+      const msg = `WebSocket 建立失敗：${e.name || 'Error'}: ${e.message || e}`;
+      console.error('[PMS WebSocket]', msg, e);
+      setConnectionUi('error', msg);
+      return;
+    }
+
+    state.ws.onopen = () => {
+      opened = true;
+      console.info('[PMS WebSocket] OPEN', url);
+      setConnectionUi('connected', `已連線：${url}`);
+      toast('連線成功', url, 'success');
+    };
+
+    state.ws.onmessage = evt => handleWsMessage(evt.data);
+
+    state.ws.onerror = evt => {
+      hadError = true;
+      console.error('[PMS WebSocket] ERROR', { url, readyState: state.ws?.readyState, event: evt });
+      setConnectionUi(
+        'error',
+        `WebSocket 錯誤：${url}。請查看 F12 Console / Network → WS；若隨後 close=1006，通常是握手、瀏覽器安全政策或後端程序立即退出。`
+      );
+    };
+
+    state.ws.onclose = evt => {
+      const closeInfo =
+        `WebSocket 已關閉：code=${evt.code}, clean=${evt.wasClean ? 'yes' : 'no'}` +
+        `${evt.reason ? `, reason=${evt.reason}` : ''} · ${url}`;
+
+      console.warn('[PMS WebSocket] CLOSE', {
+        url,
+        opened,
+        hadError,
+        code: evt.code,
+        reason: evt.reason,
+        wasClean: evt.wasClean
+      });
+
+      rejectActive(new Error(closeInfo));
+      clearQueue(new Error(closeInfo));
+      state.ws = null;
+
+      // Preserve an error state instead of overwriting it with a generic Offline badge.
+      if (hadError || !opened || !evt.wasClean || evt.code === 1006) {
+        setConnectionUi('error', closeInfo);
+      } else {
+        setConnectionUi('disconnected', closeInfo);
+      }
+      clearSession(false);
+    };
+  }
+  function disconnect(notify = true) {
+    if (state.ws) { state.ws.onclose = null; try { state.ws.close(); } catch (_) {} state.ws = null; }
+    rejectActive(new Error('連線已關閉。')); clearQueue(new Error('連線已關閉。')); setConnectionUi('disconnected','連線已關閉。'); if (notify) toast('已中斷連線');
+  }
+
+  function clearQueue(error) { while (state.queue.length) state.queue.shift().reject(error); }
+  function rejectActive(error) { if (state.active) { const a = state.active; state.active = null; a.reject(error); } }
+  function handleWsMessage(data) {
+    if (data instanceof Blob) { data.text().then(handleTextChunk); return; }
+    if (data instanceof ArrayBuffer) { handleTextChunk(new TextDecoder().decode(data)); return; }
+    handleTextChunk(String(data));
+  }
+  function handleTextChunk(chunk) {
+    const lines = chunk.replace(/\r/g,'').split('\n');
+    lines.forEach(line => {
+      if (!state.active) return;
+      if (line === 'EOF') {
+        const a = state.active; state.active = null; state.lastResponseAt = new Date(); setText('metricLast', nowText());
+        const errLine=a.lines.find(x=>x.startsWith('ERROR|')); if(errLine){a.reject(new Error(errLine.slice(6)||'Backend error'));}else{a.resolve(a.lines.slice());} pumpQueue(); return;
+      }
+      if (line !== '') { state.active.lines.push(line); if (state.active.onLine) state.active.onLine(line); }
+    });
+  }
+  function sendRequest(command, options = {}) {
+    return new Promise((resolve,reject) => { state.queue.push({command, resolve, reject, lines:[], onLine:options.onLine || null, timeout:options.timeout || 120000}); pumpQueue(); });
+  }
+  function pumpQueue() {
+    if (state.active || !state.queue.length) return;
+    if (!wsOpen()) { clearQueue(new Error('WebSocket 尚未連線。')); return; }
+    const req = state.queue.shift(); state.active = req;
+    const timer = setTimeout(() => { if (state.active === req) { state.active = null; req.reject(new Error('命令逾時，未收到 EOF。')); pumpQueue(); } }, req.timeout);
+    const resolve0 = req.resolve, reject0 = req.reject;
+    req.resolve = v => { clearTimeout(timer); resolve0(v); }; req.reject = e => { clearTimeout(timer); reject0(e); };
+    try { state.ws.send(req.command); } catch (e) { state.active = null; req.reject(e); pumpQueue(); }
+  }
+
+  function pmsCommand(type, mode, user, pwd, p1='1', p2='1', p3='1', p4='1') {
+    return ['pmsGP', type, mode, user, pwd, p1, p2, p3, p4].map(String).join(' ');
+  }
+  function sessionCommand(mode,p1='1',p2='1',p3='1',p4='1') {
+    if (!state.loggedIn) throw new Error('請先登入。');
+    return pmsCommand(state.role, mode, state.user, state.password, p1,p2,p3,p4);
+  }
+  async function request(mode,p1='1',p2='1',p3='1',p4='1', options={}) { return sendRequest(sessionCommand(mode,p1,p2,p3,p4), options); }
+  function parseRows(lines, expectedMin = 1) { return lines.map(x => x.split('|')).filter(x => x.length >= expectedMin); }
+
+  async function login() {
+    if (!wsOpen()) { toast('尚未連線','請先建立 WebSocket 連線。','error'); return; }
+    try {
+      const user = validateToken($('loginUser').value,'登入帳號'); const pass = validateToken($('loginPass').value,'登入密碼',{allowPipe:true,allowComma:true});
+      if (user.length < 5 || pass.length < 5) throw new Error('登入帳號與密碼至少需 5 個字元。');
+      $('loginBtn').disabled = true; const lines = await sendRequest(pmsCommand('USER','loginQuery',user,pass,'1','1','1','1'));
+      const arr = (lines[0] || '').split('|');
+      if (arr[0] === '1') {
+        state.user=user; state.password=pass; state.role=clean(arr[1]) || 'USER'; state.auth=state.role; state.loggedIn=true; state.passwordExpired=false; updateExpiredPasswordUi(); setIdentityUi(); resetIdle();
+
+        // Normal USER: immediately enter password retrieval view and show
+        // authorized passwords by default. Admin roles keep the original flow.
+        if (!isAdmin()) {
+          state.vaultMasked = false;
+          $('vaultMaskBtn').textContent = '隱藏密碼';
+        }
+
+        toast('登入成功', `${user} (${state.role})`, 'success');
+        setText('loginHint', `登入成功：${user} / ${state.role}`);
+        await loadVault();
+
+        if (!isAdmin()) {
+          showView('vault');
+        }
+      } else if (arr[0] === '-1') {
+        state.user=user; state.password=pass; state.role=clean(arr[2])||'USER'; state.auth=state.role; state.loggedIn=true; state.passwordExpired=true;
+        updateExpiredPasswordUi(); setIdentityUi(); resetIdle();
+        setText('loginHint', `密碼已過期：${user}，請先更新 Web 登入密碼。`);
+        toast('密碼已過期','帳號已鎖定，請先更新登入密碼。','error',7000);
+        focusExpiredPasswordChange();
+      } else throw new Error('帳號或密碼不正確。');
+    } catch (e) { toast('登入失敗', e.message, 'error',7000); clearSession(false); }
+    finally { $('loginBtn').disabled = !wsOpen(); }
+  }
+  function updateExpiredPasswordUi() {
+    const card=$('changeLoginPasswordCard');
+    if (card) card.hidden = !state.passwordExpired;
+  }
+  function focusExpiredPasswordChange() {
+    showView('overview');
+    updateExpiredPasswordUi();
+    $('newLoginPass').value='';
+    $('confirmLoginPass').value='';
+    requestAnimationFrame(() => {
+      const card=$('changeLoginPasswordCard');
+      if (card) card.scrollIntoView({behavior:'smooth', block:'center'});
+      const input=$('newLoginPass');
+      if (input) input.focus({preventScroll:true});
+    });
+  }
+
+  function clearSession(clearInputs = true) {
+    state.user=''; state.password=''; state.role=''; state.auth='USER'; state.loggedIn=false; state.passwordExpired=false; clearTimeout(state.idleTimer); state.datasets.vault=[]; renderVault(); updateExpiredPasswordUi(); setIdentityUi();
+    if (clearInputs) { $('loginUser').value=''; $('loginPass').value=''; $('newLoginPass').value=''; $('confirmLoginPass').value=''; }
+    if (isViewAdmin() && !canViewAdminUi()) showView('overview');
+  }
+  function logout() { clearSession(true); toast('已登出','登入資訊已從前端記憶體清除。'); }
+  function resetIdle() { clearTimeout(state.idleTimer); if (state.loggedIn) state.idleTimer=setTimeout(() => { clearSession(true); toast('閒置逾時','已自動清除登入狀態。','error',7000); }, IDLE_MS); }
+
+  function isViewAdmin() { const active=document.querySelector('.view.active'); return active && !['view-overview','view-vault'].includes(active.id); }
+  function toggleDebugUiMode() {
+    state.debugUiMode = !state.debugUiMode;
+    setIdentityUi();
+    if (state.debugUiMode) {
+      toast('DEBUG UI 已啟用','已解鎖 ADMIN/GOD 管理畫面；後端認證與權限檢查不變，未登入或未授權命令仍會被拒絕。','info',8000);
+    } else {
+      toast('DEBUG UI 已關閉','管理畫面已恢復依登入角色顯示。','info'); 
+      if (isViewAdmin() && !isAdmin()) showView('overview');
+      logout();
+    }
+  }
+  function showView(name) {
+    if (!viewMeta[name]) return; if (!['overview','vault'].includes(name) && !canViewAdminUi()) { toast('權限不足','此功能僅供管理角色使用。','error'); return; }
+    $$('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`)); $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view===name));
+    setText('pageTitle',viewMeta[name][0]); setText('pageSub',viewMeta[name][1]); $('sidebar').classList.remove('open');
+  }
+
+  async function loadVault() {
+    if (!state.loggedIn) { toast('請先登入','','error'); return; }
+    try {
+      const lines = await request('pmsQuery','@','1','1','1');
+      if (lines.some(x => /Binary file .* matches/i.test(x))) throw new Error('後端將解密資料判定為 binary；請更新 pmsGP_v2.1.sh。');
+      const rows = parseRows(lines,4).filter(r => /^\d+$/.test(r[0]) && r.length >= 4);
+      if (lines.length && !rows.length) throw new Error(`後端回應格式異常：${lines[0]}`);
+      state.datasets.vault = rows;
+      renderVault();
+      setText('vaultSummary', `${rows.length} 筆授權帳密 · ${nowText()}`);
+    } catch(e){
+      state.datasets.vault=[]; renderVault();
+      setText('vaultSummary','查詢失敗。');
+      toast('密碼查詢失敗',e.message,'error',8000);
+    }
+  }
+  function renderVault() {
+    renderTable('vaultTbody','vaultEmpty',state.datasets.vault,row => [row[0],row[1],state.vaultMasked?maskSecret(row[2]):row[2],row[3]], {secretCols:[2]});
+  }
+
+  async function changeLoginPassword() {
+    try {
+      if (!state.loggedIn) throw new Error('請先登入。'); const p1=validateNewPassword($('newLoginPass').value); const p2=clean($('confirmLoginPass').value);
+      if (p1.length<5) throw new Error('新密碼至少需 5 個字元。'); if (p1!==p2) throw new Error('兩次輸入的新密碼不一致。');
+      const ok=await confirmAction('更新登入密碼',`將更新 ${state.user} 的 PMS Web 登入密碼，完成後會自動登出。`,'更新'); if(!ok)return;
+      await request('genSave',state.user,p1,state.role,'Y'); toast('密碼已更新','請使用新密碼重新登入。','success'); clearSession(true);
+    } catch(e){toast('更新失敗',e.message,'error');}
+  }
+
+  function renderTable(tbodyId, emptyId, rows, cellMap, options={}) {
+    const tbody=$(tbodyId); tbody.replaceChildren(); $(emptyId).hidden=rows.length>0;
+    rows.forEach((row, idx) => {
+      const tr=document.createElement('tr'); const cells=cellMap(row,idx);
+      cells.forEach((cell,ci) => { const td=document.createElement('td'); td.textContent=String(cell ?? ''); if(options.monoCols?.includes(ci))td.classList.add('mono'); if(options.secretCols?.includes(ci))td.classList.add('mono','secret'); tr.appendChild(td); });
+      if(options.action) { const td=document.createElement('td'); td.appendChild(options.action(row,idx)); tr.appendChild(td); }
+      tbody.appendChild(tr);
+    });
+  }
+  function editButton(label, cb) { const b=document.createElement('button'); b.className='btn sm'; b.textContent=label; b.onclick=cb; return b; }
+  function filterRows(rows,q){ q=clean(q).toLowerCase(); return !q ? rows : rows.filter(r=>r.join(' ').toLowerCase().includes(q)); }
+
+  async function loadHosts(){try{state.datasets.hosts=parseRows(await request('gemQuery','@','1','1','1'),6);renderHosts();}catch(e){toast('主機清單載入失敗',e.message,'error');}}
+  function renderHosts(){const rows=filterRows(state.datasets.hosts,$('hostsSearch').value);renderTable('hostsTbody','hostsEmpty',rows,r=>[r[0],r[1],r[2],r[3],r[4]==='Y'?'啟用':'停用',r[5]],{monoCols:[1],action:r=>editButton('編輯',()=>{ $('hostIp').value=r[1];$('hostName').value=r[2];$('hostOs').value=r[3];$('hostEnabled').value=r[4]; })});}
+  async function saveHost(){try{const ip=validateIp($('hostIp').value),hn=validateToken($('hostName').value,'Hostname'),os=validateToken($('hostOs').value,'OS'),en=$('hostEnabled').value; state.datasets.hosts=parseRows(await request('gemSave',ip,hn,os,en),6);renderHosts();toast('主機資料已儲存',`${ip} ${hn}`,'success');}catch(e){toast('儲存失敗',e.message,'error');}}
+
+  async function loadUsers(){try{state.datasets.users=parseRows(await request('genQuery','@','1','1','1'),6);renderUsers();}catch(e){toast('使用者載入失敗',e.message,'error');}}
+  function renderUsers(){const rows=filterRows(state.datasets.users,$('usersSearch').value);renderTable('usersTbody','usersEmpty',rows,r=>[r[0],r[1],state.adminPasswordsMasked?maskSecret(r[2]):r[2],r[3],r[4]==='Y'?'啟用':'停用',r[5]],{secretCols:[2],action:r=>editButton('編輯',()=>{$('webUserId').value=r[1];$('webUserPass').value=r[2];$('webUserRole').value=r[3];$('webUserEnabled').value=r[4];})});}
+  async function saveUser(){try{const u=validateToken($('webUserId').value,'登入帳號'),p=validateNewPassword($('webUserPass').value),role=validateToken($('webUserRole').value,'角色'),en=$('webUserEnabled').value; state.datasets.users=parseRows(await request('genSave',u,p,role,en),6);renderUsers();toast('Web 使用者已儲存',u,'success');if(u===state.user && p!==state.password){toast('目前帳號密碼已變更','請使用新密碼重新登入。','info',7000);clearSession(true);}}catch(e){toast('儲存失敗',e.message,'error');}}
+
+  async function loadOs(){try{state.datasets.os=parseRows(await request('geoQuery','@','1','1','1'),5);renderOs();}catch(e){toast('系統帳號載入失敗',e.message,'error');}}
+  function renderOs(){const rows=filterRows(state.datasets.os,$('osSearch').value);renderTable('osTbody','osEmpty',rows,r=>[r[0],r[1],r[2],r[3]==='Y'?'啟用':'停用',r[4]],{action:r=>editButton('編輯',()=>{$('osAccount').value=r[1];$('osDesc').value=r[2];$('osEnabled').value=r[3];})});}
+  async function saveOs(){try{const a=validateToken($('osAccount').value,'系統帳號'),d=validateToken($('osDesc').value,'說明'),en=$('osEnabled').value; state.datasets.os=parseRows(await request('geoSave',a,d,en,'1'),5);renderOs();toast('系統帳號已儲存',a,'success');}catch(e){toast('儲存失敗',e.message,'error');}}
+
+  async function loadAuthorizations(){
+    try {
+      if(!state.datasets.users.length) await loadUsers(); if(!state.datasets.os.length) await loadOs();
+      state.datasets.auth=parseRows(await request('gepQuery','@','1','1','1'),3);
+      const current=$('authUser').value; $('authUser').replaceChildren(new Option('請選擇使用者',''));
+      state.datasets.users.forEach(r=>{if(r[4]==='Y')$('authUser').appendChild(new Option(`${r[1]} (${r[3]})`,r[1]));}); if(current && Array.from($('authUser').options).some(o=>o.value===current))$('authUser').value=current;
+      renderAuth();
+    } catch(e){toast('授權資料載入失敗',e.message,'error');}
+  }
+  function normalizeAuthRow(row){
+    // gepQuery currently returns line-numbered joined rows. Locate the first Y/N token at the end and the first two useful identifiers.
+    const vals=row.slice(); const n=vals[0]; const user=vals[1]||''; const account=vals[2]||''; const enabled=vals[vals.length-1]||''; return {n,user,account,enabled};
+  }
+  function renderAuth(){
+    const user=$('authUser').value, q=clean($('authSearch').value).toLowerCase(); const box=$('authCheckList'); box.replaceChildren();
+    if(!user){const e=document.createElement('div');e.className='empty';e.innerHTML='<strong>請選擇 Web 使用者</strong>選擇後即可編輯其系統帳號授權。';box.appendChild(e);setText('authSummary','請選擇要編輯的使用者。');return;}
+    const authMap=new Map(); state.datasets.auth.map(normalizeAuthRow).filter(x=>x.user===user).forEach(x=>authMap.set(x.account,x.enabled==='Y'));
+    const accounts=state.datasets.os.map(r=>r[1]).filter(a=>!q||a.toLowerCase().includes(q)); let enabledCount=0;
+    accounts.forEach(acct=>{const checked=authMap.get(acct)===true;if(checked)enabledCount++;const row=document.createElement('label');row.className='check-row';const cb=document.createElement('input');cb.type='checkbox';cb.dataset.account=acct;cb.checked=checked;const name=document.createElement('span');name.textContent=acct;row.append(cb,name);box.appendChild(row);});
+    setText('authSummary',`${user}：目前畫面 ${accounts.length} 個帳號，已授權 ${enabledCount} 個。`);
+  }
+  async function saveAuthorizations(){
+    try{const user=validateToken($('authUser').value,'Web 使用者');const checks=$$('#authCheckList input[type=checkbox]');if(!checks.length)throw new Error('沒有可儲存的系統帳號。');const payload=checks.map(cb=>`${user}|${cb.dataset.account}@${cb.checked?'Y':'N'}`).join(',');validateToken(payload,'授權資料',{allowPipe:true,allowComma:true});const lines=await request('gepSave',payload,`${user}@`,'1','1');state.datasets.auth=parseRows(lines,3);toast('授權已儲存',user,'success');await loadAuthorizations();$('authUser').value=user;renderAuth();}catch(e){toast('授權儲存失敗',e.message,'error',7000);}
+  }
+
+  async function loadPasswords(){
+    try{
+      const lines=await request('pms2Query','all','1','1','1');
+      if(lines.some(x=>/Binary file .* matches/i.test(x))) throw new Error('後端將解密資料判定為 binary；請更新 pmsGP_v2.1.sh。');
+      const rows=parseRows(lines,6).filter(r=>/^\d+$/.test(r[0]) && r.length>=6);
+      if(lines.length && !rows.length) throw new Error(`後端回應格式異常：${lines[0]}`);
+      state.datasets.passwords=rows;
+      renderPasswords();
+    }catch(e){
+      state.datasets.passwords=[];renderPasswords();
+      toast('密碼資料載入失敗',e.message,'error',8000);
+    }
+  }
+  function renderPasswords(){const rows=filterRows(state.datasets.passwords,$('passwordsSearch').value);renderTable('passwordsTbody','passwordsEmpty',rows,r=>[r[0],r[1],state.adminPasswordsMasked?maskSecret(r[2]):r[2],r[3],r[4],r[5]],{secretCols:[2]});}
+  function appendTerminal(line){const t=$('rotationTerminal');if(t.textContent.includes('等待執行...'))t.textContent='';const div=document.createElement('div');div.textContent=line;if(/\[OK\]|SUCCESS|done|All job is done/i.test(line))div.className='ok';else if(/FAIL|ERROR|Failed/i.test(line))div.className='bad';t.appendChild(div);t.scrollTop=t.scrollHeight;}
+  async function rotatePasswords(){
+    try{const accounts=validateToken($('rotationAccounts').value||'all','輪替帳號',{allowPipe:true});const ok=await confirmAction('執行主機密碼輪替',`即將對「${accounts}」執行 pmsSave。此操作會連線受管主機並修改系統帳號密碼。\n\n請確認目前主機連線、SSH 與備份狀態均正常。`,'開始執行');if(!ok)return;$('rotationTerminal').replaceChildren();$('rotationBtn').disabled=true;await request('pmsSave',accounts,'1','1','1',{timeout:20*60*1000,onLine:appendTerminal});toast('密碼輪替流程完成','請檢查終端輸出與稽核日誌。','success',7000);await loadPasswords();}catch(e){appendTerminal(`ERROR: ${e.message}`);toast('密碼輪替失敗',e.message,'error',8000);}finally{$('rotationBtn').disabled=false;}
+  }
+
+  async function loadSettings(){
+    try{const lines=await request('reloadQuery','1','1','1','1');const a=(lines[0]||'').split('|'); if(a.length<6)throw new Error(`reloadQuery 回應欄位不足：${lines[0]||'(empty)'}`);state.settings={pwdLen:a[0],expire:a[1],freq:a[2],hour:a[3],minute:a[4],seed:a[5]};$('cfgPwdLen').value=a[0];$('cfgExpire').value=a[1];$('cfgFreq').value=a[2];$('cfgHour').value=a[3];$('cfgMinute').value=a[4];$('cfgSeedCurrent').value=a[5];toast('設定已載入','','success');}catch(e){toast('設定載入失敗',e.message,'error');}
+  }
+  async function savePolicy(){try{const len=Number($('cfgPwdLen').value),exp=Number($('cfgExpire').value);if(!Number.isInteger(len)||len<8||len>64)throw new Error('密碼長度需為 8~64。');if(!Number.isInteger(exp)||exp<1||exp>3650)throw new Error('到期天數需為 1~3650。');await request('gerSave',String(len),'1','1','1');await request('gesSave',String(exp),'1','1','1');await loadSettings();toast('密碼政策已更新','','success');}catch(e){toast('儲存失敗',e.message,'error');}}
+  async function saveSchedule(){try{const freq=$('cfgFreq').value,h=Number($('cfgHour').value),m=Number($('cfgMinute').value),accounts=validateToken($('cfgAccounts').value||'all','輪替帳號',{allowPipe:true});if(!Number.isInteger(h)||h<0||h>23)throw new Error('Hour 必須為 0~23。');if(!Number.isInteger(m)||m<0||m>59)throw new Error('Minute 必須為 0~59。');await request('getSave',accounts,String(m),String(h),freq);await loadSettings();toast('排程已更新',`${freq} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`,'success');}catch(e){toast('排程儲存失敗',e.message,'error');}}
+  async function saveSeed(){try{const seed=validateToken($('cfgSeedNew').value,'新 Seed',{allowPipe:true,allowComma:true});if(seed.length<8)throw new Error('新 Seed 建議至少 8 個字元。');const ok=await confirmAction('更新加密 Seed',`此操作會先使用目前 Seed 解密 pms_file，再以新 Seed 重新加密。\n\n請確認 /ws/old 備份目錄可用，並避免同時間執行密碼輪替。`,'更新並重加密');if(!ok)return;await request('geuSave',seed,'1','1','1');$('cfgSeedNew').value='';await loadSettings();toast('加密 Seed 已更新','','success',7000);}catch(e){toast('Seed 更新失敗',e.message,'error',8000);}}
+
+  async function loadAudit(){
+    try{const u=validateToken($('auditUser').value||'@','查詢帳號',{allowEmpty:false});const from=$('auditFrom').value,to=$('auditTo').value;if(!from||!to)throw new Error('請選擇起訖日期。');state.datasets.audit=parseRows(await request('logQuery',u,dateForBackend(from),dateForBackend(to),'1'),6);renderAudit();}catch(e){toast('日誌查詢失敗',e.message,'error');}
+  }
+  function renderAudit(){const rows=filterRows(state.datasets.audit,$('auditSearch').value);renderTable('auditTbody','auditEmpty',rows,r=>[r[0],r[1],r[2],r[3],r[4],r[5]],{monoCols:[5]});}
+
+  function bind() {
+    $('connectBtn').onclick=connect; $('topConnectBtn').onclick=connect; $('disconnectBtn').onclick=()=>disconnect();
+    $('environment').onchange=()=>{ if(wsOpen()) setConnectionUi('connected', `連線設定已變更；目前連線仍是既有端點。按「重新連線」套用 ${currentWsUrl()}`); };
+    $('customWs').oninput=()=>{ if(wsOpen()) setConnectionUi('connected', `連線設定已變更；目前連線仍是既有端點。按「重新連線」套用 ${currentWsUrl()}`); };
+    $('loginBtn').onclick=login; $('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login();}); $('logoutBtn').onclick=logout; $('topLogoutBtn').onclick=logout;
+    $('vaultRefreshBtn').onclick=loadVault; $('vaultMaskBtn').onclick=()=>{state.vaultMasked=!state.vaultMasked;$('vaultMaskBtn').textContent=state.vaultMasked?'顯示密碼':'隱藏密碼';renderVault();}; $('changeLoginPassBtn').onclick=changeLoginPassword;
+    $('hostsRefreshBtn').onclick=loadHosts; $('hostsSearch').oninput=renderHosts; $('hostSaveBtn').onclick=saveHost; $('hostClearBtn').onclick=()=>{['hostIp','hostName'].forEach(x=>$(x).value='');$('hostOs').value='Linux';$('hostEnabled').value='Y';};
+    $('usersRefreshBtn').onclick=loadUsers; $('usersSearch').oninput=renderUsers; $('webUserSaveBtn').onclick=saveUser; $('webUserClearBtn').onclick=()=>{['webUserId','webUserPass'].forEach(x=>$(x).value='');$('webUserRole').value='USER';$('webUserEnabled').value='Y';};
+    $('osRefreshBtn').onclick=loadOs; $('osSearch').oninput=renderOs; $('osSaveBtn').onclick=saveOs; $('osClearBtn').onclick=()=>{['osAccount','osDesc'].forEach(x=>$(x).value='');$('osEnabled').value='Y';};
+    $('authRefreshBtn').onclick=loadAuthorizations; $('authUser').onchange=renderAuth; $('authSearch').oninput=renderAuth; $('authSaveBtn').onclick=saveAuthorizations;
+    $('passwordsRefreshBtn').onclick=loadPasswords; $('passwordsSearch').oninput=renderPasswords; $('passwordsMaskBtn').onclick=()=>{state.adminPasswordsMasked=!state.adminPasswordsMasked;$('passwordsMaskBtn').textContent=state.adminPasswordsMasked?'顯示密碼':'隱藏密碼';renderPasswords();renderUsers();}; $('rotationBtn').onclick=rotatePasswords;
+    $('settingsReloadBtn').onclick=loadSettings; $('cfgPolicySaveBtn').onclick=savePolicy; $('cfgScheduleSaveBtn').onclick=saveSchedule; $('cfgSeedSaveBtn').onclick=saveSeed;
+    $('auditRefreshBtn').onclick=loadAudit; $('auditSearch').oninput=renderAudit;
+    $('menuBtn').onclick=()=> $('sidebar').classList.toggle('open');
+    $$('.nav-btn').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+    $$('[data-toggle-password]').forEach(b=>b.onclick=()=>{const i=$(b.dataset.togglePassword);i.type=i.type==='password'?'text':'password';});
+    ['mousemove','mousedown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,resetIdle,{passive:true}));
+    window.addEventListener('keydown', e => {
+      if (e.repeat) return;
+      if (e.ctrlKey && e.shiftKey && e.altKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        toggleDebugUiMode();
+      }
+    });
+  }
+
+  function init() {
+    bind(); setConnectionUi('disconnected'); setIdentityUi();
+    const today=new Date(), ago=new Date(Date.now()-7*86400000); $('auditFrom').value=dateInputValue(ago); $('auditTo').value=dateInputValue(today);
+    setInterval(()=>setText('clock',nowText()),1000);setText('clock',nowText());
+    // Always start from the URL visible in this page. Do not silently override it
+    // with an older sessionStorage value from a previous connection.
+    setTimeout(connect,150);
+  }
+  init();
+})();
+</script>
+</body>
+</html>
