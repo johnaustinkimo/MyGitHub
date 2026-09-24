@@ -354,7 +354,7 @@
         </article>
 
         <article class="card">
-          <div class="card-head"><div><div class="card-title">使用者登入</div><div class="card-sub">使用既有 gen_file 認證流程</div></div><span class="badge neutral" id="loginBadge">Guest</span></div>
+          <div class="card-head"><div><div class="card-title">使用者登入</div><div class="card-sub">使用 LOGIN 認證流程</div></div><span class="badge neutral" id="loginBadge">Guest</span></div>
           <div class="card-body">
             <div class="field"><label for="loginUser">帳號</label><input id="loginUser" class="control" autocomplete="username" placeholder="例如 109101"></div>
             <div class="field"><label for="loginPass">密碼</label><div class="password-wrap"><input id="loginPass" class="control" type="password" autocomplete="current-password" placeholder="輸入登入密碼"><button class="password-toggle" data-toggle-password="loginPass" type="button">◉</button></div></div>
@@ -685,7 +685,11 @@
       setText('loginHint', `登入成功：${state.user} / ${state.role}`);
       loadVault();
       showView('vault');
-    } 
+      } else {
+       state.datasets.vault=[]; renderVault();
+       setText('vaultSummary','登入後可查詢。');
+       setText('loginHint', '連線已建立，請輸入 PMS 帳號密碼。');		      
+      }
     setText('identityBadge', who); setText('metricSession', who); setText('loginBadge', state.loggedIn ? state.role : 'Guest');
     $('identityBadge').className = `badge ${state.debugUiMode ? 'bad' : state.loggedIn ? (isAdmin() ? 'info' : 'ok') : 'neutral'}`;
     $('loginBadge').className = $('identityBadge').className;
@@ -907,7 +911,12 @@
   async function loadVault() {
     if (!state.loggedIn) { toast('請先登入','','error'); return; }
     try {
-      const lines = await request('pmsQuery','@','1','1','1');
+      const isAdminOrDebug = 
+	    state.role === 'ADMIN' || 
+	    state.auth === 'ADMIN' || 
+	    state.debugUiMode === true;
+      const queryMode = isAdminOrDebug ? 'Y' : '1';
+      const lines = await request('pmsQuery','@',queryMode,'1','1');
       if (lines.some(x => /Binary file .* matches/i.test(x))) throw new Error('後端將解密資料判定為 binary；請更新 pmsGP_v2.1.sh。');
       const rows = parseRows(lines,4).filter(r => /^\d+$/.test(r[0]) && r.length >= 4);
       if (lines.length && !rows.length) throw new Error(`後端回應格式異常：${lines[0]}`);
